@@ -3,6 +3,9 @@ name = "resume-converter"
 version = "0.1.0"
 description = "SJ - 이력서변환기"
 requires-python = ">=3.11"
+
+[tool.vercel]
+entrypoint = "app.py"
 dependencies = [
     "flask>=3.1.2",
     "openpyxl>=3.1.5",
