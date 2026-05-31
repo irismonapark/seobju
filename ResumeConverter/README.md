@@ -38,13 +38,31 @@ python app.py
 
 ## GitHub → Vercel 배포
 
-1. GitHub 저장소 생성 후 아래만 커밋: `app.py`, `requirements.txt`, `templates/sample.xlsx`, `templates/resume_template.xlsx`, `repair_template.py`, `static/`, `.gitignore`, `README.md`
+코드는 [irismonapark/seobju](https://github.com/irismonapark/seobju) 의 **`ResumeConverter/`** 폴더에 있습니다.
 
-양식 갱신 시: `templates/sample.xlsx` 교체 후 `python repair_template.py` 실행
-2. Vercel → Import → Framework **Flask** 자동 감지
-3. (권장) `SESSION_SECRET` 환경 변수 설정
+### Vercel 대시보드 (권장)
 
-`vercel.json` 없이 `app.py`의 `app` 인스턴스를 자동 인식합니다.
+1. [Vercel 새 프로젝트 Import](https://vercel.com/new/import?s=https://github.com/irismonapark/seobju) 접속
+2. **Root Directory:** `ResumeConverter` 지정
+3. Framework: **Flask** (자동 감지)
+4. Environment Variables (권장): `SESSION_SECRET` = 임의 문자열
+5. **Deploy** 클릭 → 완료 후 `https://프로젝트명.vercel.app` URL 확인
+
+### Vercel CLI
+
+```bash
+cd ResumeConverter
+npx vercel login
+npx vercel deploy --prod
+```
+
+로그인 오류 시 [Vercel 토큰](https://vercel.com/account/tokens) 발급 후:
+
+```bash
+npx vercel deploy --prod --token YOUR_TOKEN
+```
+
+`vercel.json`에 PDF 변환용 `maxDuration: 60`, `memory: 1024` 설정이 포함되어 있습니다.
 
 ## 시스템별 헤더 색 (구분)
 
