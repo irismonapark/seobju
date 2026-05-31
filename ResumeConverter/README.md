@@ -42,8 +42,8 @@ python app.py
 
 ### Vercel 대시보드 (권장)
 
-1. [Vercel 새 프로젝트 Import](https://vercel.com/new/import?s=https://github.com/irismonapark/seobju) 접속
-2. **Root Directory:** `ResumeConverter` 지정
+1. [Vercel Import — seobju-resume](https://vercel.com/new/import?s=https://github.com/irismonapark/seobju&project-name=seobju-resume&root-directory=ResumeConverter) 접속
+2. **Project Name:** `seobju-resume` · **Root Directory:** `ResumeConverter` 확인
 3. Framework: **Flask** (자동 감지)
 4. Environment Variables (권장): `SESSION_SECRET` = 임의 문자열
 5. **Deploy** 클릭 → 완료 후 `https://프로젝트명.vercel.app` URL 확인
