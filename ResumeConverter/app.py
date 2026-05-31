@@ -27,15 +27,26 @@ from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _is_vercel():
+    return bool(
+        os.environ.get('VERCEL')
+        or os.environ.get('VERCEL_ENV')
+        or os.environ.get('VERCEL_URL')
+    )
+
+
+if not _is_vercel():
+    logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key')
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = '/tmp' if os.environ.get('VERCEL') else tempfile.gettempdir()
+app.config['UPLOAD_FOLDER'] = '/tmp' if _is_vercel() else tempfile.gettempdir()
 
-IS_PRODUCTION = os.environ.get('VERCEL') or os.environ.get('FLASK_ENV') == 'production'
+IS_PRODUCTION = _is_vercel() or os.environ.get('FLASK_ENV') == 'production'
 MAX_PDF_PAGES = 30
 MAX_TEXT_LENGTH = 10000
 MIN_TEXT_LENGTH = 20
@@ -116,6 +127,15 @@ def validate_resume_text(text):
 
 def ensure_template_exists():
     from pathlib import Path
+
+    template_path = Path(TEMPLATE_PATH)
+    if template_path.is_file() and template_path.stat().st_size > 1000:
+        return
+
+    if _is_vercel():
+        raise ValueError(
+            '이력서 양식(resume_template.xlsx)이 서버에 없습니다. 관리자에게 문의하세요.'
+        )
 
     from repair_template import repair_xlsx, resolve_source_path
 
@@ -510,15 +530,6 @@ def handle_request_too_large(_error):
     }), 413
 
 
-@app.errorhandler(500)
-def handle_internal_error(_error):
-    logger.exception('서버 오류')
-    return jsonify({
-        'success': False,
-        'error': '서버 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
-    }), 500
-
-
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok', 'service': 'resume-converter'}), 200
@@ -526,7 +537,16 @@ def health():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception:
+        logger.exception('index 렌더 실패')
+        return (
+            '<h1>SJ - 이력서변환기</h1>'
+            '<p>화면 로딩 오류. 잠시 후 새로고침해 주세요.</p>'
+            '<p><a href="/health">/health</a></p>',
+            500,
+        )
 
 
 @app.route('/convert', methods=['POST'])
