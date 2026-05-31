@@ -5,4 +5,11 @@ __pycache__
 .vercel
 scripts
 *.pyc
+templates/sample.xlsx
+templates/sample_re.xlsx
 templates/test_keep_styles.xlsx
+build_template.py
+repair_template.py
+test_app.py
+uv.lock
+replit.md

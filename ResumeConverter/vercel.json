@@ -1,17 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "",
   "functions": {
-    "api/index.py": {
+    "app.py": {
       "maxDuration": 60,
-      "memory": 1024,
-      "excludeFiles": "{templates/sample.xlsx,templates/sample_re.xlsx,templates/test_keep_styles.xlsx,scripts/**,**/__pycache__/**}"
+      "memory": 1024
     }
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index"
-    }
-  ]
+  }
 }
