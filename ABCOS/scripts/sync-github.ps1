@@ -31,7 +31,7 @@ if ($rc -ge 8) {
 
 Push-Location $repoRoot
 try {
-    & $git add -A
+    & $git add ABCOS README.md
     $status = & $git status --porcelain
     if (-not $status) {
         Write-Host "No changes to commit in seobju-github."
