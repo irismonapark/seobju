@@ -196,6 +196,10 @@ const PAYSLIP_CSS = `
   .footer { text-align: center; margin-top: 18px; padding: 10px 8px; background: #b4c7e7; border: 1px solid #000; font-size: 14px; }
 `;
 
+/** A4 출력용 — scale 2 PNG 대비 용량 대폭 절감 */
+const PDF_CANVAS_SCALE = 1.5;
+const PDF_JPEG_QUALITY = 0.85;
+
 async function createPayslipPdf(payslip: PayslipData): Promise<Blob> {
   const wrapper = document.createElement('div');
   wrapper.style.cssText =
@@ -212,17 +216,18 @@ async function createPayslipPdf(payslip: PayslipData): Promise<Blob> {
 
   try {
     const canvas = await html2canvas(content.firstElementChild as HTMLElement, {
-      scale: 2,
+      scale: PDF_CANVAS_SCALE,
       backgroundColor: '#ffffff',
       useCORS: true,
     });
 
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 15;
     const imgWidth = pageWidth - margin * 2;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    doc.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin, imgWidth, imgHeight);
+    const imgData = canvas.toDataURL('image/jpeg', PDF_JPEG_QUALITY);
+    doc.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
     return doc.output('blob');
   } finally {
     document.body.removeChild(wrapper);
