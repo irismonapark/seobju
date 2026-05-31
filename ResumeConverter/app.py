@@ -6,16 +6,6 @@ import shutil
 import tempfile
 import zipfile
 
-import openpyxl
-import pdfplumber
-from albamon_parser import build_extra_text, parse_albamon_resume
-from excel_layout import (
-    apply_workbook_layout,
-    clear_cell,
-    format_signature_line,
-    split_education_line,
-    write_cell,
-)
 from template_config import (
     CERT_DATA_COLS,
     CERT_MAX_ROWS,
@@ -81,6 +71,8 @@ def allowed_file(filename, allowed_extensions):
 
 
 def extract_text_from_pdf(pdf_path):
+    import pdfplumber
+
     try:
         with pdfplumber.open(pdf_path) as pdf:
             if len(pdf.pages) > MAX_PDF_PAGES:
@@ -246,6 +238,8 @@ def validate_parsed_data(data):
 
 def parse_resume_data(text):
     """알바몬 PDF 우선 파싱, 실패 시 일반 형식 폴백"""
+    from albamon_parser import parse_albamon_resume
+
     albamon = parse_albamon_resume(text)
     if albamon.get('이름'):
         log_debug(
@@ -395,6 +389,8 @@ def _parse_resume_data_generic(text):
 
 def clear_sample_data(ws):
     """sample 예시 데이터만 지우고 제목·컬럼명·병합 레이아웃은 유지"""
+    from excel_layout import clear_cell
+
     edu_start, edu_end = CLEAR_SAMPLE_ROWS['edu']
     for row in range(edu_start, edu_end + 1):
         for col in EDU_DATA_COLS:
@@ -419,6 +415,16 @@ def clear_sample_data(ws):
 
 def fill_excel_template(data, photo_bytes=None):
     """sample.xlsx 원본 양식 복사 후 PDF 데이터만 채움"""
+    import openpyxl
+
+    from albamon_parser import build_extra_text
+    from excel_layout import (
+        apply_workbook_layout,
+        format_signature_line,
+        split_education_line,
+        write_cell,
+    )
+
     ensure_template_exists()
 
     output_filename = make_output_filename(data.get('이름', ''))
