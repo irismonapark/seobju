@@ -1,0 +1,173 @@
+기존 index.html과 관련 CSS/JS에서 아래 UI 항목만 수정해줘. 기능 로직은 건드리지 말 것.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## [1] 용어 전면 교체
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+화면에 표시되는 모든 텍스트에서 아래 용어로 통일:
+
+| 기존 표현 | 변경 표현 |
+|-----------|-----------|
+| A파일 / 근태 A파일 | 업체 근태파일 |
+| BC 청구서 / BC파일 | 근태 및 청구내역서 |
+| PDF 급여명세서 / D파일 | 급여명세서 PDF |
+| BC 청구서 생성 (버튼) | 근태 및 청구내역서 생성 |
+| 급여명세서 PDF 생성 (버튼) | 급여명세서 PDF 생성 (유지) |
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## [2] 하단 '처리흐름' 섹션 완전 삭제
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+페이지 하단의 처리흐름 카드(도식 포함) 전체를 HTML에서 제거.
+계산기준 카드도 하단에서 제거.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## [3] 상단 헤더 영역 재구성
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+헤더(네비바 또는 페이지 최상단)에 아래 요소를 한 줄로 배치:
+```html
+<!-- 좌측: 시스템명 -->
+<span class="brand">🏢 급여정산 자동화 시스템 — 주식회사 섭주</span>
+
+<!-- 우측: 처리 흐름 한줄 요약 (작은 글씨) -->
+<span class="flow-summary">
+  📂 업체 근태파일 → ① 근태 및 청구내역서 생성 → ② 급여명세서 PDF 생성
+</span>
+```
+
+스타일:
+```css
+.brand { font-weight: 700; color: #283593; font-size: 1rem; }
+.flow-summary { font-size: 0.78rem; color: #78909C; letter-spacing: -0.2px; }
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## [4] 계산기준 → 카드 상단 부제목 영역으로 이동
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+하단 계산기준 카드를 삭제하고, 대신 각 카드 헤더 바로 아래에
+뱃지형으로 한 줄 요약 표시:
+
+시스템 1 카드 아래:
+```html
+<div class="calc-badges">
+  <span class="badge-info">점심 1시간 공제</span>
+  <span class="badge-info">시급 10,320원 고정</span>
+  <span class="badge-info">심야 22시↑ ×1.5/×2.0</span>
+  <span class="badge-info">총액 10원 단위 올림</span>
+</div>
+```
+
+시스템 2 카드 아래:
+```html
+<div class="calc-badges">
+  <span class="badge-info">근로소득세 3% (10원 내림)</span>
+  <span class="badge-info">지방소득세 0.3%</span>
+  <span class="badge-info">실수령액 = 총액 - 공제</span>
+</div>
+```
+
+뱃지 스타일:
+```css
+.calc-badges { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px; background: #F8F9FF; border-bottom: 1px solid #E0E4EF; }
+.badge-info { font-size: 0.72rem; color: #3949AB; background: #EEF0FB; border-radius: 20px; padding: 3px 10px; white-space: nowrap; }
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## [5] 전체 레이아웃 압축 - 한 화면에 다 보이도록
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PC 기준 스크롤 없이 한 화면에 시스템 1, 2가 모두 보이도록 압축.
+```css
+/* 전체 여백 축소 */
+.container { padding-top: 12px; padding-bottom: 12px; }
+.card { margin-bottom: 12px; }
+.card-body { padding: 14px 16px; }
+
+/* 업로드 존 높이 축소 */
+.upload-zone { padding: 18px 16px; min-height: 100px; }
+.upload-zone .upload-icon { font-size: 2rem; }
+.upload-zone p { font-size: 0.85rem; margin-bottom: 6px; }
+
+/* 지원파일 안내 박스 축소 */
+.file-info-box { padding: 8px 12px; font-size: 0.8rem; margin-bottom: 8px; }
+.file-info-box li { margin-bottom: 2px; }
+
+/* 버튼 높이 축소 */
+.btn-convert { padding: 10px; font-size: 0.95rem; }
+
+/* 두 카드 나란히 */
+@media (min-width: 992px) {
+  .cards-row { display: flex; gap: 16px; align-items: flex-start; }
+  .cards-row .card { flex: 1; }
+}
+```
+
+HTML 구조:
+```html
+<div class="container">
+  <div class="cards-row">
+    <!-- 시스템 1 카드 -->
+    <div class="card"> ... </div>
+    <!-- 시스템 2 카드 -->
+    <div class="card"> ... </div>
+  </div>
+</div>
+```
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## [6] '다시 시작하기' 버튼 추가
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+변환 완료 후 다운로드 버튼 아래에 '다시 시작하기' 버튼 표시.
+클릭 시 해당 카드의 업로드 영역과 결과 영역을 초기 상태로 리셋.
+```html
+<!-- 변환 완료 후 결과 영역 안에 추가 -->
+<button class="btn btn-reset w-100 mt-2" onclick="resetCard(1)">
+  🔄 다시 시작하기
+</button>
+```
+```css
+.btn-reset {
+  background: #FFFFFF;
+  border: 1.5px solid #90A4AE;
+  color: #546E7A;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  padding: 8px;
+  transition: all 0.2s;
+}
+.btn-reset:hover {
+  background: #F5F7FA;
+  border-color: #607D8B;
+  color: #37474F;
+}
+```
+```javascript
+function resetCard(cardNum) {
+  if (cardNum === 1) {
+    // 시스템1 초기화
+    document.getElementById('file-input-1').value = '';
+    document.getElementById('upload-zone-1').querySelector('p').textContent = '여기에 파일을 드래그하거나';
+    document.getElementById('result-area-1').style.display = 'none';
+    document.getElementById('upload-zone-1').style.display = 'block';
+  } else {
+    // 시스템2 초기화
+    document.getElementById('file-input-2').value = '';
+    document.getElementById('result-area-2').style.display = 'none';
+    document.getElementById('upload-zone-2').style.display = 'block';
+  }
+}
+```
+
+각 카드의 id는 실제 코드에 맞게 조정할 것.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## 최종 화면 목표 구조
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+┌─────────────────────────────────────────────┐
+│ 🏢 급여정산 자동화 시스템 — 주식회사 섭주        │
+│        📂 근태파일 → ① 청구내역서 → ② 명세서  │
+├────────────────────┬────────────────────────┤
+│ ① 업체 근태파일      │ ② 근태 및 청구내역서    │
+│   → 청구내역서 변환  │   → 급여명세서 PDF      │
+│ [뱃지: 계산기준]     │ [뱃지: 공제기준]        │
+│ [드래그 업로드]      │ [드래그 업로드]         │
+│ [청구내역서 생성▶]   │ [급여명세서 PDF 생성▶]  │
+│ [다시 시작하기]      │ [다시 시작하기]         │
+└────────────────────┴────────────────────────┘

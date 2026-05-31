@@ -1,0 +1,16 @@
+kind = "web"
+previewPath = "/"
+title = "급여정산 자동화 시스템"
+version = "1.0.0"
+id = "payroll_system_flask"
+
+[[services]]
+localPort = 8080
+name = "Payroll System"
+paths = ["/"]
+
+[services.development]
+run = "PORT=8080 python /home/runner/workspace/artifacts/payroll-system/app.py"
+
+[services.production]
+run = "cd /home/runner/workspace/artifacts/payroll-system && gunicorn app:app --workers 2 --timeout 120 --bind 0.0.0.0:$PORT"

@@ -1,0 +1,444 @@
+:root {
+  --primary:       #3949AB;
+  --primary-dark:  #283593;
+  --primary-light: #EEF0FB;
+  --bg:            #F5F7FA;
+  --card-radius:   12px;
+  --shadow:        0 2px 8px rgba(0,0,0,0.06);
+  --text-main:     #1A1A2E;
+}
+
+body {
+  background-color: var(--bg);
+  color: #212121;
+  font-family: 'Noto Sans KR', 'Segoe UI', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── 헤더 (어브코스 전용: 남색 — pocos=청록, 이력서변환기=보라) ── */
+.site-header {
+  background: #1A237E;
+  box-shadow: 0 2px 8px rgba(26, 35, 126, 0.25);
+  padding: 0;
+}
+
+.brand {
+  font-weight: 700;
+  color: #FFFFFF;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+/* legacy navbar alias (if referenced elsewhere) */
+.navbar {
+  background: #1A237E;
+  box-shadow: 0 2px 8px rgba(26, 35, 126, 0.25);
+  padding: 0.5rem 0;
+}
+
+.flow-summary {
+  font-size: 0.78rem;
+  color: #78909C;
+  letter-spacing: -0.2px;
+}
+
+/* 계산기준 뱃지 영역 */
+.calc-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #F8F9FF;
+  border-bottom: 1px solid #E0E4EF;
+}
+
+.badge-info {
+  font-size: 0.72rem;
+  color: #3949AB;
+  background: #EEF0FB;
+  border-radius: 20px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+
+/* ── 카드 ──────────────────────────────────── */
+.card {
+  background: #FFFFFF;
+  border: 1px solid #E0E4EF;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+}
+
+.card-header {
+  background: #F0F2FF;
+  border-bottom: 1px solid #E0E4EF;
+  color: #283593;
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 14px 14px 0 0 !important;
+  padding: 0.9rem 1.25rem;
+}
+
+.step-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+  border: 2px solid #C5CAE9;
+}
+
+.card-title-main {
+  font-weight: 700;
+  font-size: 0.98rem;
+  line-height: 1.3;
+  color: #283593;
+}
+
+.card-subtitle-main {
+  font-size: 0.77rem;
+  color: #5C6BC0;
+  margin-top: 2px;
+}
+
+/* ── Info box ───────────────────────────────── */
+.info-box {
+  background: var(--primary-light);
+  border-radius: 8px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--primary);
+  font-size: 0.8rem;
+  margin-bottom: 0;
+  color: #444;
+}
+
+.info-box-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  line-height: 1.5;
+}
+
+.info-box-inline i {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+/* 파일 선택 완료 시 label(파일 선택 버튼) 숨김 */
+.drop-zone.has-file label {
+  display: none;
+}
+
+/* ── 업로드 영역 ─────────────────────────────── */
+.drop-zone {
+  border: 2px dashed #B0BEC5;
+  border-radius: 10px;
+  padding: 18px 16px;
+  text-align: center;
+  background: #FAFBFF;
+  color: #78909C;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.drop-zone:hover,
+.drop-zone.drag-over,
+.drop-zone.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.drop-zone.has-file {
+  border-color: #43A047;
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+
+.drop-icon {
+  font-size: 2rem;
+  color: #90A4AE;
+  margin-bottom: 0.4rem;
+}
+
+.drop-zone:hover .drop-icon,
+.drop-zone.drag-over .drop-icon {
+  color: var(--primary);
+}
+
+/* ── 버튼 ───────────────────────────────────── */
+.btn-primary {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 10px;
+  font-size: 0.95rem;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background-color: #43A047 !important;
+  border-color: #43A047 !important;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 10px;
+  font-size: 0.95rem;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #2E7D32 !important;
+  border-color: #2E7D32 !important;
+  transform: translateY(-1px);
+}
+
+.download-btn-red {
+  color: #C62828;
+  border-color: #E53935;
+}
+
+.download-btn-red:hover {
+  background: #FFEBEE;
+  color: #B71C1C;
+}
+
+.download-btn-green {
+  color: #2E7D32;
+  border-color: #43A047;
+}
+
+.download-btn-green:hover {
+  background: #E8F5E9;
+  color: #1B5E20;
+}
+
+.btn-danger {
+  background-color: #E53935 !important;
+  border-color: #E53935 !important;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 10px;
+  font-size: 0.95rem;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #C62828 !important;
+  transform: translateY(-1px);
+}
+
+/* ── 결과 박스 ──────────────────────────────── */
+.result-success,
+.alert-success {
+  background: #E8F5E9 !important;
+  border: 1px solid #C8E6C9 !important;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #2E7D32 !important;
+}
+
+.result-error,
+.alert-danger {
+  background: #FFEBEE !important;
+  border: 1px solid #FFCDD2 !important;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #B71C1C !important;
+}
+
+/* ── 다시 시작하기 버튼 ──────────────────────── */
+.btn-reset {
+  background: transparent;
+  border: 1.5px dashed #B0BEC5;
+  color: #78909C;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  padding: 7px;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: -4px;
+  letter-spacing: -0.1px;
+}
+
+.btn-reset:hover {
+  background: #ECEFF1;
+  border-color: #78909C;
+  border-style: solid;
+  color: #455A64;
+}
+
+.btn-reset.d-none {
+  display: none !important;
+}
+
+/* ── 다운로드 버튼 ───────────────────────────── */
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 0.9rem;
+  background: #FFFFFF;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.download-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+/* ── 로딩 스피너 ─────────────────────────────── */
+.spinner-border {
+  color: var(--primary) !important;
+  width: 2rem;
+  height: 2rem;
+}
+
+/* ── 처리 흐름 / 규칙 섹션 ─────────────────────── */
+.flow-section,
+.rules-section {
+  background: #FFFFFF;
+  border: 1px solid #E8ECF0;
+  border-radius: var(--card-radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.flow-title {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.flow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 0.6rem 1rem;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #546E7A;
+  min-width: 100px;
+  text-align: center;
+}
+
+.flow-step i {
+  font-size: 1.3rem;
+  color: #90A4AE;
+}
+
+.flow-step.active {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.flow-step.active i {
+  color: var(--primary);
+}
+
+.flow-arrow {
+  font-size: 1.3rem;
+  color: #90A4AE;
+}
+
+.rule-item {
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #455A64;
+}
+
+/* ── 푸터 ───────────────────────────────────── */
+.footer {
+  padding: 1.5rem 0;
+  border-top: 1px solid #E8ECF0;
+  margin-top: 2rem;
+  color: #78909C;
+  font-size: 0.82rem;
+}
+
+/* ── 반응형: 태블릿 이하 (≤768px) ──────────────── */
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: 16px;
+  }
+
+  .btn,
+  .download-btn {
+    width: 100%;
+    margin-bottom: 8px;
+    justify-content: center;
+  }
+
+  .drop-zone {
+    padding: 20px 12px;
+  }
+
+  .flow-section,
+  .rules-section {
+    padding: 1rem;
+  }
+}
+
+/* ── 반응형: 모바일 (≤576px) ─────────────────── */
+@media (max-width: 576px) {
+  .flow-summary {
+    display: none;
+  }
+
+  .card-body {
+    padding: 12px;
+  }
+
+  .step-badge {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+  }
+
+  .card-title-main {
+    font-size: 0.9rem;
+  }
+
+  .card-subtitle-main {
+    font-size: 0.72rem;
+  }
+}
