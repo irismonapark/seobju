@@ -61,3 +61,5 @@ __pycache__/
 *.py[cod]
 .python-version
 .venv/
+
+.vercel
