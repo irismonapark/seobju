@@ -1,0 +1,35 @@
+"""sample_re.xlsx 양식 셀 매핑 (병합·영역 기준)"""
+
+SCALAR_CELLS = {
+    '이름': 'I3',
+    '생년월일': 'I4',
+    '주소': 'I5',
+    '연락처': 'I6',
+}
+
+EDU_START_ROW = 9
+EDU_MAX_ROWS = 3
+EDU_DATA_COLS = ('B', 'E', 'K', 'O', 'S')
+
+EXP_START_ROW = 13
+EXP_MAX_ROWS = 6
+EXP_DATA_COLS = ('B', 'E', 'J', 'S')
+
+CERT_START_ROW = 20
+CERT_MAX_ROWS = 1
+CERT_DATA_COLS = ('B', 'H', 'K')
+
+INTRO_CELL = 'A26'
+EXTRA_CELL = 'B23'
+SIGNATURE_CELL = 'A27'
+
+PRINT_AREA = 'A1:T28'
+LAST_LAYOUT_ROW = 28
+
+CLEAR_SAMPLE_ROWS = {
+    'edu': (EDU_START_ROW, EDU_START_ROW + EDU_MAX_ROWS - 1),
+    'exp': (EXP_START_ROW, EXP_START_ROW + EXP_MAX_ROWS - 1),
+    'cert': (CERT_START_ROW, CERT_START_ROW + CERT_MAX_ROWS - 1),
+}
+
+CLEAR_SAMPLE_CELLS = (INTRO_CELL, EXTRA_CELL, SIGNATURE_CELL)

@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.pythonlibs/
+venv/
+ENV/
+env/
+
+# Flask
+instance/
+.webassets-cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+
+# Replit
+.replit
+.local/
+replit.nix
+
+# Vercel
+.vercel
+
+_sample_cells.txt
+_inspect_sample.py
+_test_out.xlsx
+templates/_repair_tmp.xlsx
+templates/test_keep_styles.xlsx
+*.xlsx.tmp
+
+# 환경·비밀
+.env
+.env.*
+
+# Cursor
+.cursor/
