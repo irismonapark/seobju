@@ -8,6 +8,11 @@
 
 ## Vercel 배포
 
+### pocos (포코스 급여관리)
+1. [Vercel Import — pocos](https://vercel.com/new/import?s=https://github.com/irismonapark/seobju&project-name=seobju-pocos&root-directory=pocos&framework=vite) 접속
+2. **Root Directory:** `pocos` · **Framework:** Vite 확인
+3. **Deploy** → URL 예: `https://seobju-pocos.vercel.app`
+
 ### ABCOS
 1. [Vercel New Project](https://vercel.com/new) → `irismonapark/seobju` Import
 2. **Root Directory:** `ABCOS`

@@ -22,6 +22,9 @@ scripts/test-invoice-out.xlsx
 scripts/test-border-out.xlsx
 scripts/*.xlsx
 
+# Local deploy artifacts
+.netlify
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
