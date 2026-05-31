@@ -52,6 +52,10 @@ Thumbs.db
 # Vercel
 .vercel
 
+# Secrets
+.env
+.env.local
+
 # Python
 __pycache__/
 *.py[cod]
