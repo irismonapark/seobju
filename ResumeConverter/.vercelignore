@@ -1,0 +1,8 @@
+.git
+__pycache__
+.pythonlibs
+.venv
+.vercel
+scripts
+*.pyc
+templates/test_keep_styles.xlsx
