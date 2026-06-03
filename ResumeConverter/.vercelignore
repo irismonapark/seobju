@@ -4,6 +4,7 @@ __pycache__
 .venv
 .vercel
 scripts
+api
 *.pyc
 templates/sample.xlsx
 templates/sample_re.xlsx
