@@ -38,7 +38,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key')
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 if _is_vercel():
-    os.makedirs('/tmp', exist_ok=True)
+    try:
+        os.makedirs('/tmp', exist_ok=True)
+    except OSError:
+        pass
     app.config['UPLOAD_FOLDER'] = '/tmp'
 else:
     app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
