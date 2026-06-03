@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import tempfile
+import uuid
 import zipfile
 
 from template_config import (
@@ -25,8 +26,6 @@ from template_config import (
 )
 from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.exceptions import RequestEntityTooLarge
-from werkzeug.utils import secure_filename
-
 logger = logging.getLogger(__name__)
 
 
@@ -41,10 +40,19 @@ def _is_vercel():
 if not _is_vercel():
     logging.basicConfig(level=logging.INFO)
 
+def _upload_folder():
+    if _is_vercel():
+        folder = os.path.join('/tmp', 'resume-converter')
+    else:
+        folder = os.path.join(tempfile.gettempdir(), 'resume-converter')
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key')
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = '/tmp' if _is_vercel() else tempfile.gettempdir()
+app.config['UPLOAD_FOLDER'] = _upload_folder()
 
 IS_PRODUCTION = _is_vercel() or os.environ.get('FLASK_ENV') == 'production'
 MAX_PDF_PAGES = 30
@@ -532,7 +540,15 @@ def handle_request_too_large(_error):
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'resume-converter'}), 200
+    template_ok = os.path.isfile(TEMPLATE_PATH)
+    return jsonify({
+        'status': 'ok',
+        'service': 'resume-converter',
+        'template': template_ok,
+        'template_size': (
+            os.path.getsize(TEMPLATE_PATH) if template_ok else 0
+        ),
+    }), 200
 
 
 @app.route('/')
@@ -567,7 +583,7 @@ def convert():
 
         temp_pdf = os.path.join(
             app.config['UPLOAD_FOLDER'],
-            'temp_' + secure_filename(pdf_file.filename),
+            f'{uuid.uuid4().hex}.pdf',
         )
         pdf_file.save(temp_pdf)
         resume_text = validate_resume_text(extract_text_from_pdf(temp_pdf))
@@ -578,22 +594,36 @@ def convert():
 
         output_path, output_filename = fill_excel_template(parsed_data, photo_bytes)
 
-        response = send_file(
-            output_path,
+        with open(output_path, 'rb') as excel_file:
+            excel_bytes = io.BytesIO(excel_file.read())
+        safe_remove(output_path)
+        output_path = None
+
+        excel_bytes.seek(0)
+        return send_file(
+            excel_bytes,
             as_attachment=True,
             download_name=output_filename,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
 
-        @response.call_on_close
-        def cleanup():
-            safe_remove(output_path)
-
-        return response
-
     except ValueError as exc:
         safe_remove(output_path)
         return jsonify({'success': False, 'error': str(exc)}), 400
+    except FileNotFoundError as exc:
+        safe_remove(output_path)
+        logger.exception('변환 실패 (파일 없음)')
+        return jsonify({
+            'success': False,
+            'error': '서버에 이력서 양식 파일이 없습니다. 관리자에게 문의해주세요.',
+        }), 500
+    except OSError as exc:
+        safe_remove(output_path)
+        logger.exception('변환 실패 (OS)')
+        return jsonify({
+            'success': False,
+            'error': f'파일 처리 오류: {exc}',
+        }), 500
     except Exception:
         safe_remove(output_path)
         logger.exception('변환 실패')
