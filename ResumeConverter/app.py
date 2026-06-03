@@ -26,21 +26,17 @@ from template_config import (
 )
 from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.exceptions import RequestEntityTooLarge
+from werkzeug.utils import secure_filename
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-def _is_vercel():
-    return bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
-
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key')
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = '/tmp' if _is_vercel() else tempfile.gettempdir()
+app.config['UPLOAD_FOLDER'] = '/tmp' if os.environ.get('VERCEL') else tempfile.gettempdir()
 
-IS_PRODUCTION = _is_vercel() or os.environ.get('FLASK_ENV') == 'production'
+IS_PRODUCTION = os.environ.get('VERCEL') or os.environ.get('FLASK_ENV') == 'production'
 MAX_PDF_PAGES = 30
 MAX_TEXT_LENGTH = 10000
 MIN_TEXT_LENGTH = 20
@@ -48,20 +44,7 @@ MIN_TEXT_LENGTH = 20
 ALLOWED_PDF_EXTENSIONS = {'pdf'}
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def _resolve_template_path():
-    candidates = [
-        os.path.join(BASE_DIR, 'templates', 'resume_template.xlsx'),
-        os.path.join(os.getcwd(), 'templates', 'resume_template.xlsx'),
-    ]
-    for path in candidates:
-        if os.path.isfile(path) and os.path.getsize(path) > 1000:
-            return path
-    return candidates[0]
-
-
-TEMPLATE_PATH = _resolve_template_path()
+TEMPLATE_PATH = os.path.join(BASE_DIR, 'templates', 'resume_template.xlsx')
 SAMPLE_SOURCE_PATH = os.path.join(BASE_DIR, 'templates', 'sample_re.xlsx')
 SAMPLE_RE_DOWNLOAD = os.path.join(
     os.path.expanduser('~'),
@@ -139,7 +122,7 @@ def ensure_template_exists():
     if template_path.is_file() and template_path.stat().st_size > 1000:
         return
 
-    if _is_vercel():
+    if os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'):
         raise ValueError(
             '이력서 양식(resume_template.xlsx)이 서버에 없습니다. 관리자에게 문의하세요.'
         )
@@ -537,31 +520,23 @@ def handle_request_too_large(_error):
     }), 413
 
 
+@app.errorhandler(500)
+def handle_internal_error(_error):
+    logger.exception('서버 오류')
+    return jsonify({
+        'success': False,
+        'error': '서버 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+    }), 500
+
+
 @app.route('/health')
 def health():
-    template_ok = os.path.isfile(TEMPLATE_PATH)
-    return jsonify({
-        'status': 'ok',
-        'service': 'resume-converter',
-        'template': template_ok,
-        'template_size': (
-            os.path.getsize(TEMPLATE_PATH) if template_ok else 0
-        ),
-    }), 200
+    return jsonify({'status': 'ok', 'service': 'resume-converter'}), 200
 
 
 @app.route('/')
 def index():
-    try:
-        return render_template('index.html')
-    except Exception:
-        logger.exception('index 렌더 실패')
-        return (
-            '<h1>SJ - 이력서변환기</h1>'
-            '<p>화면 로딩 오류. 잠시 후 새로고침해 주세요.</p>'
-            '<p><a href="/health">/health</a></p>',
-            500,
-        )
+    return render_template('index.html')
 
 
 @app.route('/convert', methods=['POST'])
@@ -609,30 +584,13 @@ def convert():
     except ValueError as exc:
         safe_remove(output_path)
         return jsonify({'success': False, 'error': str(exc)}), 400
-    except FileNotFoundError as exc:
-        safe_remove(output_path)
-        logger.exception('변환 실패 (파일 없음)')
-        return jsonify({
-            'success': False,
-            'error': '서버에 이력서 양식 파일이 없습니다. 관리자에게 문의해주세요.',
-        }), 500
-    except OSError as exc:
-        safe_remove(output_path)
-        logger.exception('변환 실패 (OS)')
-        return jsonify({
-            'success': False,
-            'error': f'파일 처리 오류: {exc}',
-        }), 500
-    except Exception as exc:
+    except Exception:
         safe_remove(output_path)
         logger.exception('변환 실패')
-        payload = {
+        return jsonify({
             'success': False,
             'error': '변환 중 오류가 발생했습니다. 파일 형식과 내용을 확인해주세요.',
-        }
-        if _is_vercel():
-            payload['detail'] = f'{type(exc).__name__}: {exc}'
-        return jsonify(payload), 500
+        }), 500
     finally:
         safe_remove(temp_pdf)
 
