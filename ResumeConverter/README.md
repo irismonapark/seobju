@@ -62,7 +62,7 @@ npx vercel deploy --prod
 npx vercel deploy --prod --token YOUR_TOKEN
 ```
 
-`vercel.json`에 PDF 변환용 `maxDuration: 60`, `memory: 1024` 설정이 포함되어 있습니다.
+Vercel 대시보드 → **Functions**에서 PDF 변환용 `maxDuration: 60`, `memory: 1024` 권장. 엔트리포인트는 `pyproject.toml`의 `main:app` (→ `main.py`)입니다.
 
 ## 시스템별 헤더 색 (구분)
 
