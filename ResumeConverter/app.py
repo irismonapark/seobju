@@ -166,29 +166,42 @@ def ensure_template_exists():
 
 
 def extract_photo_from_pdf(pdf_path):
-    """PDF에서 가장 큰 사진 추출 (없으면 None → sample 기본 사진 유지)"""
+    """PDF 1페이지에서 증명사진 후보 추출 (없으면 None → sample 기본 사진 유지)"""
     try:
         import fitz
     except ImportError:
-        log_debug('pymupdf 미설치 — sample 사진 유지')
+        logger.warning('pymupdf 미설치 — PDF 사진을 엑셀에 넣을 수 없습니다.')
         return None
 
     try:
         doc = fitz.open(pdf_path)
         best_bytes = None
-        best_area = 0
-        for page in doc:
+        best_score = 0
+        for page_num, page in enumerate(doc):
+            if page_num > 0:
+                break
             for info in page.get_images(full=True):
                 xref = info[0]
                 extracted = doc.extract_image(xref)
-                area = extracted['width'] * extracted['height']
-                if area > best_area and area > 4000:
-                    best_area = area
+                width = extracted.get('width') or 0
+                height = extracted.get('height') or 0
+                if width < 50 or height < 50:
+                    continue
+                area = width * height
+                if area < 2500:
+                    continue
+                aspect = height / width if width else 0
+                portrait_bonus = 1.4 if 1.0 <= aspect <= 2.8 else 0.7
+                score = area * portrait_bonus
+                if score > best_score:
+                    best_score = score
                     best_bytes = extracted['image']
         doc.close()
+        if best_bytes:
+            log_debug('PDF 사진 추출 완료 (%d bytes)', len(best_bytes))
         return prepare_photo_bytes(best_bytes) if best_bytes else None
     except Exception as exc:
-        log_debug('PDF 사진 추출 실패: %s', exc)
+        logger.warning('PDF 사진 추출 실패: %s', exc)
         return None
 
 
@@ -212,14 +225,16 @@ def replace_photo_in_xlsx(xlsx_path, image_bytes):
     with zipfile.ZipFile(xlsx_path, 'r') as zin:
         archive = {name: zin.read(name) for name in zin.namelist()}
 
-    media_files = [
+    media_files = sorted(
         name for name in archive
         if name.startswith('xl/media/') and name.lower().endswith(('.png', '.jpg', '.jpeg'))
-    ]
+    )
     if not media_files:
+        logger.warning('엑셀 양식에 사진 슬롯(xl/media)이 없습니다.')
         return
 
-    archive[media_files[0]] = image_bytes
+    for media_name in media_files:
+        archive[media_name] = image_bytes
     temp_path = xlsx_path + '.tmp'
     with zipfile.ZipFile(temp_path, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
         for name, data in archive.items():
