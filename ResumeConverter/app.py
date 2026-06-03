@@ -24,19 +24,26 @@ from template_config import (
     SCALAR_CELLS,
     SIGNATURE_CELL,
 )
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, jsonify, request, send_file
 from werkzeug.exceptions import RequestEntityTooLarge
-from werkzeug.utils import secure_filename
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def _is_vercel():
+    return bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
+
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key')
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = '/tmp' if os.environ.get('VERCEL') else tempfile.gettempdir()
+if _is_vercel():
+    os.makedirs('/tmp', exist_ok=True)
+    app.config['UPLOAD_FOLDER'] = '/tmp'
+else:
+    app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
 
-IS_PRODUCTION = os.environ.get('VERCEL') or os.environ.get('FLASK_ENV') == 'production'
+IS_PRODUCTION = _is_vercel() or os.environ.get('FLASK_ENV') == 'production'
 MAX_PDF_PAGES = 30
 MAX_TEXT_LENGTH = 10000
 MIN_TEXT_LENGTH = 20
@@ -520,23 +527,20 @@ def handle_request_too_large(_error):
     }), 413
 
 
-@app.errorhandler(500)
-def handle_internal_error(_error):
-    logger.exception('서버 오류')
-    return jsonify({
-        'success': False,
-        'error': '서버 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
-    }), 500
-
-
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'resume-converter'}), 200
+    template_ok = os.path.isfile(TEMPLATE_PATH)
+    return jsonify({
+        'status': 'ok',
+        'service': 'resume-converter',
+        'template': template_ok,
+    }), 200
 
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    index_path = os.path.join(BASE_DIR, 'public', 'index.html')
+    return send_file(index_path, mimetype='text/html; charset=utf-8')
 
 
 @app.route('/convert', methods=['POST'])
@@ -584,16 +588,20 @@ def convert():
     except ValueError as exc:
         safe_remove(output_path)
         return jsonify({'success': False, 'error': str(exc)}), 400
-    except Exception:
+    except Exception as exc:
         safe_remove(output_path)
         logger.exception('변환 실패')
         return jsonify({
             'success': False,
-            'error': '변환 중 오류가 발생했습니다. 파일 형식과 내용을 확인해주세요.',
+            'error': str(exc) if isinstance(exc, OSError) else (
+                '변환 중 오류가 발생했습니다. 파일 형식과 내용을 확인해주세요.'
+            ),
         }), 500
     finally:
         safe_remove(temp_pdf)
 
+
+application = app
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5002))

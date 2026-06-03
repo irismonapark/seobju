@@ -1,5 +1,13 @@
+blinker==1.9.0
+charset-normalizer==3.4.1
+click==8.1.8
+et-xmlfile==2.0.0
 flask==3.1.2
+itsdangerous==2.2.0
+jinja2==3.1.6
+markupsafe==3.0.2
 openpyxl==3.1.5
+pdfminer.six==20231228
 pdfplumber==0.11.8
 pillow==11.1.0
 werkzeug==3.1.3

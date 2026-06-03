@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SJ - 이력서변환기</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="page-container header-inner">
+            <span class="brand">SJ - 이력서변환기</span>
+        </div>
+    </header>
+
+    <div class="page-container main-content">
+        <div class="service-description">
+            <p><strong>알바몬 지원자 이력서 PDF를 SJ 입사지원서(엑셀) 양식으로 자동 변환합니다.</strong></p>
+            <p class="upload-hint">PDF 4MB 이하 · 스캔(이미지) PDF는 지원되지 않을 수 있습니다.</p>
+        </div>
+
+        <form id="convertForm" enctype="multipart/form-data">
+            <div class="card">
+                <div class="card-header">
+                    <h2>알바몬 이력서 PDF 업로드</h2>
+                </div>
+                <div class="card-body">
+                    <div class="upload-zone" id="pdfDropZone">
+                        <span class="material-icons upload-icon">cloud_upload</span>
+                        <p class="upload-text">클릭하거나 드래그하세요</p>
+                        <p class="upload-subtext">알바몬 지원자 이력서 PDF</p>
+                        <input type="file" id="resumePdf" name="resume_pdf" accept=".pdf" hidden>
+                    </div>
+                    <div class="file-info" id="pdfFileInfo" style="display: none;">
+                        <span class="material-icons">check_circle</span>
+                        <span id="pdfFileName"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="convert-button-container">
+                <button type="submit" class="convert-button" id="convertButton" disabled>
+                    <span class="material-icons">table_chart</span>
+                    엑셀파일로 변환
+                </button>
+                <button type="button" class="refresh-button" id="refreshButton" title="업로드 및 결과 초기화">
+                    <span class="material-icons">refresh</span>
+                    새로고침
+                </button>
+            </div>
+
+            <div class="result-message" id="resultMessage" style="display: none;"></div>
+        </form>
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
