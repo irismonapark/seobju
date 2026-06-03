@@ -62,7 +62,20 @@ MIN_TEXT_LENGTH = 20
 ALLOWED_PDF_EXTENSIONS = {'pdf'}
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEMPLATE_PATH = os.path.join(BASE_DIR, 'templates', 'resume_template.xlsx')
+
+
+def _resolve_template_path():
+    candidates = [
+        os.path.join(BASE_DIR, 'templates', 'resume_template.xlsx'),
+        os.path.join(os.getcwd(), 'templates', 'resume_template.xlsx'),
+    ]
+    for path in candidates:
+        if os.path.isfile(path) and os.path.getsize(path) > 1000:
+            return path
+    return candidates[0]
+
+
+TEMPLATE_PATH = _resolve_template_path()
 SAMPLE_SOURCE_PATH = os.path.join(BASE_DIR, 'templates', 'sample_re.xlsx')
 SAMPLE_RE_DOWNLOAD = os.path.join(
     os.path.expanduser('~'),
@@ -624,13 +637,16 @@ def convert():
             'success': False,
             'error': f'파일 처리 오류: {exc}',
         }), 500
-    except Exception:
+    except Exception as exc:
         safe_remove(output_path)
         logger.exception('변환 실패')
-        return jsonify({
+        payload = {
             'success': False,
             'error': '변환 중 오류가 발생했습니다. 파일 형식과 내용을 확인해주세요.',
-        }), 500
+        }
+        if _is_vercel():
+            payload['detail'] = f'{type(exc).__name__}: {exc}'
+        return jsonify(payload), 500
     finally:
         safe_remove(temp_pdf)
 

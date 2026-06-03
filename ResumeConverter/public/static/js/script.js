@@ -145,7 +145,10 @@ function initializeForm() {
 async function parseErrorResponse(response) {
     try {
         const data = await response.json();
-        if (data && data.error) return data.error;
+        if (data && data.error) {
+            if (data.detail) return `${data.error} (${data.detail})`;
+            return data.error;
+        }
     } catch (_) {
         /* ignore */
     }
