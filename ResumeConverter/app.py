@@ -542,11 +542,13 @@ def health():
 
 @app.route('/')
 def index():
-    for rel in ('public/index.html', 'templates/index.html'):
-        index_path = os.path.join(BASE_DIR, *rel.split('/'))
-        if os.path.isfile(index_path):
-            with open(index_path, 'rb') as html_file:
-                return Response(html_file.read(), mimetype='text/html; charset=utf-8')
+    # Vercel: public/는 CDN 전용이라 서버리스 번들에 없음 → templates 사용
+    index_path = os.path.join(BASE_DIR, 'templates', 'index.html')
+    if not os.path.isfile(index_path):
+        index_path = os.path.join(BASE_DIR, 'public', 'index.html')
+    if os.path.isfile(index_path):
+        with open(index_path, 'rb') as html_file:
+            return Response(html_file.read(), mimetype='text/html; charset=utf-8')
     return jsonify({'success': False, 'error': '화면 파일을 찾을 수 없습니다.'}), 404
 
 
