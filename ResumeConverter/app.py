@@ -26,33 +26,19 @@ from template_config import (
 )
 from flask import Flask, jsonify, render_template, request, send_file
 from werkzeug.exceptions import RequestEntityTooLarge
+
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def _is_vercel():
-    return bool(
-        os.environ.get('VERCEL')
-        or os.environ.get('VERCEL_ENV')
-        or os.environ.get('VERCEL_URL')
-    )
-
-
-if not _is_vercel():
-    logging.basicConfig(level=logging.INFO)
-
-def _upload_folder():
-    if _is_vercel():
-        folder = os.path.join('/tmp', 'resume-converter')
-    else:
-        folder = os.path.join(tempfile.gettempdir(), 'resume-converter')
-    os.makedirs(folder, exist_ok=True)
-    return folder
+    return bool(os.environ.get('VERCEL') or os.environ.get('VERCEL_ENV'))
 
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SESSION_SECRET', 'dev-secret-key')
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
-app.config['UPLOAD_FOLDER'] = _upload_folder()
+app.config['UPLOAD_FOLDER'] = '/tmp' if _is_vercel() else tempfile.gettempdir()
 
 IS_PRODUCTION = _is_vercel() or os.environ.get('FLASK_ENV') == 'production'
 MAX_PDF_PAGES = 30
