@@ -43,16 +43,10 @@ def _parse_hope_lines(block):
 
 
 def build_extra_text(data):
-    """특이사항 영역(B23) — 어학능력·스킬·희망근무 등"""
+    """(미사용) 예전 특이사항 조합 — 자기소개는 EXTRA_CELL에 직접 기록"""
     sections = []
 
-    if data.get('스킬'):
-        sections.append('■ 나만의 스킬 · 강점')
-        sections.extend(data['스킬'])
-
     if data.get('어학능력'):
-        if sections:
-            sections.append('')
         sections.append('■ 어학능력')
         sections.extend(data['어학능력'])
 
@@ -148,20 +142,9 @@ def parse_albamon_resume(text):
             if ln.strip() and not ln.startswith('25.')
         ]
         if intro_lines:
-            data['자기소개'] = intro_lines[0]
+            data['자기소개'] = '\n'.join(intro_lines)
 
-    skill_match = re.search(
-        r'나만의\s*스킬.*?\n(.*?)(?=어학능력|희망근무|$)',
-        text,
-        re.DOTALL,
-    )
-    if skill_match:
-        for line in _lines_after_header(skill_match.group(1)):
-            if line.startswith('나의 '):
-                data['스킬'].append(line)
-            elif line and 'MBTI' not in line and 'ENTP' not in line[:4]:
-                if len(line) > 3:
-                    data['스킬'].append(line)
+    # '나만의 스킬 · 강점 · MBTI' — 엑셀 변환 대상에서 제외 (파싱하지 않음)
 
     lang_match = re.search(r'어학능력\s*\n(.*?)(?=희망근무|$)', text, re.DOTALL)
     if lang_match:

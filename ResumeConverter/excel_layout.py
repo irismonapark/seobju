@@ -125,9 +125,9 @@ def _shrink_license_section(ws):
 
 
 def _style_extra_title(ws):
-    """특이사항 타이틀 — 면허자격과 동일 배경·볼드, 2줄 표시"""
+    """자기소개 타이틀 — 면허자격과 동일 배경·볼드"""
     cell = ws[EXTRA_TITLE_CELL]
-    cell.value = '특이\n사항'
+    cell.value = '자기\n소개'
     cell.fill = HEADER_FILL
     cell.font = SIDE_LABEL_FONT
     cell.alignment = SIDE_LABEL_ALIGN

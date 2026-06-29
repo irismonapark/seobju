@@ -452,7 +452,6 @@ def fill_excel_template(data, photo_bytes=None):
     """sample.xlsx 원본 양식 복사 후 PDF 데이터만 채움"""
     import openpyxl
 
-    from albamon_parser import build_extra_text
     from excel_layout import (
         apply_workbook_layout,
         format_signature_line,
@@ -515,11 +514,9 @@ def fill_excel_template(data, photo_bytes=None):
         cert_row += 1
 
     if data.get('자기소개'):
-        write_cell(ws, INTRO_CELL, data['자기소개'])
+        write_cell(ws, EXTRA_CELL, data['자기소개'])
 
-    extra = build_extra_text(data)
-    if extra:
-        write_cell(ws, EXTRA_CELL, extra)
+    # A26(구 자기소개 영역)은 작업자 메모용 — 비워 둠
 
     name = data.get('이름', '')
     if name:
