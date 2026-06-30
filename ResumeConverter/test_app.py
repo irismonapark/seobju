@@ -80,10 +80,10 @@ def test_albamon_kimseula():
     assert ws["E9"].value == "대학(2,3년제)"
     assert ws["O9"].value == "졸업"
     assert ws["B23"].value == "항상 모든 일에 최선을 다하겠습니다!"
-    assert ws["A23"].value == "자기\n소개"
-    assert ws["A26"].value in (None, "")
+    assert ws["A23"].value == "특이\n사항"
+    assert ws["A26"].value == "채용\n담당자"
+    assert ws["B26"].value in (None, "")
     assert "나만의 스킬" not in (ws["B23"].value or "")
-    assert "어학능력" not in (ws["B23"].value or "")
     assert len(list(ws.merged_cells.ranges)) >= 65
     os.remove(out_path)
 

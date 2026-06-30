@@ -516,7 +516,7 @@ def fill_excel_template(data, photo_bytes=None):
     if data.get('자기소개'):
         write_cell(ws, EXTRA_CELL, data['자기소개'])
 
-    # A26(구 자기소개 영역)은 작업자 메모용 — 비워 둠
+    # B26 채용담당자 우측 — 작업자 기입용 공란 (타이틀은 레이아웃에서 설정)
 
     name = data.get('이름', '')
     if name:

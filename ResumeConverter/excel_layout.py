@@ -5,7 +5,15 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.page import PageMargins
 
-from template_config import EXTRA_CELL, INTRO_CELL, LAST_LAYOUT_ROW, PRINT_AREA, SIGNATURE_CELL
+from template_config import (
+    EXTRA_CELL,
+    EXTRA_TITLE_CELL,
+    INTRO_CELL,
+    LAST_LAYOUT_ROW,
+    PRINT_AREA,
+    RECRUITER_CONTENT_CELL,
+    SIGNATURE_CELL,
+)
 
 THIN = Side(style='thin', color='000000')
 THIN_BORDER = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
@@ -21,7 +29,6 @@ CENTER_HEADER_CELLS = (
     'B19', 'H19', 'K19',
 )
 
-EXTRA_TITLE_CELL = 'A23'
 LICENSE_LABEL_CELL = 'A19'
 
 COLUMN_WIDTHS = {
@@ -48,7 +55,7 @@ COLUMN_WIDTHS = {
 }
 
 HEADER_ROWS = (8, 12, 19)
-WRAP_TOP_CELLS = (INTRO_CELL, EXTRA_CELL)
+WRAP_TOP_CELLS = (EXTRA_CELL, RECRUITER_CONTENT_CELL)
 CENTER_ALIGN = Alignment(horizontal='center', vertical='center', wrap_text=True)
 SIDE_LABEL_ALIGN = Alignment(horizontal='center', vertical='center', wrap_text=True)
 
@@ -125,15 +132,35 @@ def _shrink_license_section(ws):
 
 
 def _style_extra_title(ws):
-    """자기소개 타이틀 — 면허자격과 동일 배경·볼드"""
+    """특이사항 타이틀 — PDF 자기소개 내용이 우측(B23)에 들어감"""
     cell = ws[EXTRA_TITLE_CELL]
-    cell.value = '자기\n소개'
+    cell.value = '특이\n사항'
     cell.fill = HEADER_FILL
     cell.font = SIDE_LABEL_FONT
     cell.alignment = SIDE_LABEL_ALIGN
 
     for row in (23, 24, 25):
         ws.row_dimensions[row].height = 28
+
+
+def _style_recruiter_section(ws):
+    """채용담당자 2열 — 좌측 타이틀, 우측 빈칸(작업자 기입용)"""
+    _unmerge_if_exists(ws, 'A26:T26')
+    merged = [str(m) for m in ws.merged_cells.ranges]
+    if 'B26:T26' not in merged:
+        ws.merge_cells('B26:T26')
+
+    title = ws[INTRO_CELL]
+    title.value = '채용\n담당자'
+    title.fill = HEADER_FILL
+    title.font = SIDE_LABEL_FONT
+    title.alignment = SIDE_LABEL_ALIGN
+
+    content = resolve_write_coordinate(ws, RECRUITER_CONTENT_CELL)
+    ws[content].value = None
+    ws[content].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+    ws.row_dimensions[26].height = 32
+    apply_border_to_range(ws, 26, 26, 1, 20)
 
 
 def _style_signature_area(ws):
@@ -168,6 +195,7 @@ def apply_workbook_layout(ws):
 
     _shrink_license_section(ws)
     _style_extra_title(ws)
+    _style_recruiter_section(ws)
     _style_signature_area(ws)
 
     ws.print_area = PRINT_AREA
