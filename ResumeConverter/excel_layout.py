@@ -7,11 +7,16 @@ from openpyxl.worksheet.page import PageMargins
 
 from template_config import (
     EXTRA_CELL,
+    EXTRA_END_ROW,
+    EXTRA_START_ROW,
     EXTRA_TITLE_CELL,
     INTRO_CELL,
     LAST_LAYOUT_ROW,
     PRINT_AREA,
     RECRUITER_CONTENT_CELL,
+    RECRUITER_END_ROW,
+    RECRUITER_START_ROW,
+    SECTION_ROW_HEIGHT,
     SIGNATURE_CELL,
 )
 
@@ -139,16 +144,19 @@ def _style_extra_title(ws):
     cell.font = SIDE_LABEL_FONT
     cell.alignment = SIDE_LABEL_ALIGN
 
-    for row in (23, 24, 25):
-        ws.row_dimensions[row].height = 28
+    for row in range(EXTRA_START_ROW, EXTRA_END_ROW + 1):
+        ws.row_dimensions[row].height = SECTION_ROW_HEIGHT
 
 
 def _style_recruiter_section(ws):
-    """채용담당자 2열 — 좌측 타이틀, 우측 빈칸(작업자 기입용)"""
+    """채용담당자 2열 — 특이사항과 동일 3행·행높이"""
     _unmerge_if_exists(ws, 'A26:T26')
+    _unmerge_if_exists(ws, 'A27:T28')
     merged = [str(m) for m in ws.merged_cells.ranges]
-    if 'B26:T26' not in merged:
-        ws.merge_cells('B26:T26')
+    if f'A{RECRUITER_START_ROW}:A{RECRUITER_END_ROW}' not in merged:
+        ws.merge_cells(f'A{RECRUITER_START_ROW}:A{RECRUITER_END_ROW}')
+    if f'B{RECRUITER_START_ROW}:T{RECRUITER_END_ROW}' not in merged:
+        ws.merge_cells(f'B{RECRUITER_START_ROW}:T{RECRUITER_END_ROW}')
 
     title = ws[INTRO_CELL]
     title.value = '채용\n담당자'
@@ -159,14 +167,21 @@ def _style_recruiter_section(ws):
     content = resolve_write_coordinate(ws, RECRUITER_CONTENT_CELL)
     ws[content].value = None
     ws[content].alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
-    ws.row_dimensions[26].height = 32
-    apply_border_to_range(ws, 26, 26, 1, 20)
+
+    for row in range(RECRUITER_START_ROW, RECRUITER_END_ROW + 1):
+        ws.row_dimensions[row].height = SECTION_ROW_HEIGHT
+
+    apply_border_to_range(ws, RECRUITER_START_ROW, RECRUITER_END_ROW, 1, 20)
 
 
 def _style_signature_area(ws):
+    _unmerge_if_exists(ws, 'A27:T28')
+    if 'A29:T30' not in [str(m) for m in ws.merged_cells.ranges]:
+        ws.merge_cells('A29:T30')
+
     anchor = resolve_write_coordinate(ws, SIGNATURE_CELL)
     ws[anchor].alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    for row in (27, 28):
+    for row in (29, 30):
         ws.row_dimensions[row].height = 24
 
 
