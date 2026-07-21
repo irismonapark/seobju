@@ -69,26 +69,32 @@ function removeCellBorder(cell: ExcelJS.Cell): void {
   cell.style = nextStyle;
 }
 
-/** 테이블 밖 셀에 남아 있는 테두리만 제거 (빈 border 객체를 넣지 않음) */
+/** 테이블 밖 셀 테두리 제거 — rowCount/col 범위만 처리 (getCell로 빈 행 생성 방지) */
 function clearPayslipExtraBorders(sheet: ExcelJS.Worksheet): void {
-  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-    row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-      if (!isPayslipTableCell(rowNumber, colNumber)) {
-        removeCellBorder(cell);
-      }
-    });
-  });
+  const maxRow = sheet.rowCount;
+  const maxCol = PAYSLIP_TABLE.rightCol + 2;
 
-  for (let row = 1; row < PAYSLIP_TABLE.topRow; row++) {
-    for (let col = 1; col <= 10; col++) {
-      removeCellBorder(sheet.getCell(row, col));
+  for (let row = 1; row <= maxRow; row++) {
+    for (let col = 1; col <= maxCol; col++) {
+      if (!isPayslipTableCell(row, col)) {
+        removeCellBorder(sheet.getCell(row, col));
+      }
     }
   }
-  for (let row = PAYSLIP_TABLE.bottomRow + 1; row <= 25; row++) {
-    for (let col = 1; col <= 10; col++) {
-      removeCellBorder(sheet.getCell(row, col));
-    }
-  }
+}
+
+function configurePayslipPrint(sheet: ExcelJS.Worksheet): void {
+  sheet.views = [{ showGridLines: false, zoomScale: 100 }];
+  sheet.pageSetup = {
+    ...sheet.pageSetup,
+    showGridLines: false,
+    showRowColHeaders: false,
+    printArea: 'B1:F15',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 1,
+    orientation: 'portrait',
+  };
 }
 
 function applyPayslipTableBorders(sheet: ExcelJS.Worksheet): void {
@@ -98,13 +104,18 @@ function applyPayslipTableBorders(sheet: ExcelJS.Worksheet): void {
       sheet.getCell(row, col).border = payslipCellBorder(row, col);
     }
   }
-  sheet.views = [{ showGridLines: false, zoomScale: 100 }];
+  configurePayslipPrint(sheet);
 }
 
 function trimPayslipSheetRows(sheet: ExcelJS.Worksheet): void {
-  const lastRow = 16;
+  const lastRow = 15;
   while (sheet.rowCount > lastRow) {
-    sheet.spliceRows(lastRow + 1, 1);
+    sheet.spliceRows(sheet.rowCount, 1);
+  }
+
+  const internal = sheet as unknown as { _rows?: unknown[] };
+  if (Array.isArray(internal._rows) && internal._rows.length > lastRow) {
+    internal._rows.length = lastRow;
   }
 }
 
@@ -199,8 +210,8 @@ function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void 
   sheet.getCell(PAYSLIP_CELL.LOCAL_TAX.row, 5).value = '지방소득세(0.3%)';
   setAmountCell(sheet, PAYSLIP_CELL.NET.row, PAYSLIP_CELL.NET.col, payslip.실수령액);
 
-  applyPayslipTableBorders(sheet);
   trimPayslipSheetRows(sheet);
+  applyPayslipTableBorders(sheet);
 }
 
 async function loadPayslipTemplate(): Promise<ExcelJS.Workbook> {

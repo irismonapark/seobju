@@ -4,6 +4,15 @@ const TABLE = { topRow: 3, bottomRow: 14, leftCol: 2, rightCol: 6 };
 const THIN = { style: 'thin' };
 const MEDIUM = { style: 'medium' };
 
+function isTable(row, col) {
+  return (
+    row >= TABLE.topRow &&
+    row <= TABLE.bottomRow &&
+    col >= TABLE.leftCol &&
+    col <= TABLE.rightCol
+  );
+}
+
 function tableBorder(row, col) {
   return {
     top: row === TABLE.topRow ? MEDIUM : THIN,
@@ -13,13 +22,11 @@ function tableBorder(row, col) {
   };
 }
 
-function isTable(row, col) {
-  return (
-    row >= TABLE.topRow &&
-    row <= TABLE.bottomRow &&
-    col >= TABLE.leftCol &&
-    col <= TABLE.rightCol
-  );
+function removeCellBorder(cell) {
+  if (!cell.border) return;
+  const nextStyle = { ...cell.style };
+  delete nextStyle.border;
+  cell.style = nextStyle;
 }
 
 const wb = new ExcelJS.Workbook();
@@ -34,23 +41,21 @@ try {
 } catch {}
 sheet.mergeCells('C14:D14');
 
-// remove borders outside table only — do NOT set empty border objects
-sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-  row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-    if (!isTable(rowNumber, colNumber)) {
-      delete cell.border;
-    }
-  });
-});
-
-for (let row = 1; row < TABLE.topRow; row++) {
-  for (let col = 1; col <= 10; col++) {
-    delete sheet.getCell(row, col).border;
-  }
+while (sheet.rowCount > 15) {
+  sheet.spliceRows(sheet.rowCount, 1);
 }
-for (let row = TABLE.bottomRow + 1; row <= 25; row++) {
-  for (let col = 1; col <= 10; col++) {
-    delete sheet.getCell(row, col).border;
+if (Array.isArray(sheet._rows) && sheet._rows.length > 15) {
+  sheet._rows.length = 15;
+}
+
+const maxRow = sheet.rowCount;
+const maxCol = TABLE.rightCol + 2;
+for (let row = 1; row <= maxRow; row++) {
+  for (let col = 1; col <= maxCol; col++) {
+    const cell = sheet.getCell(row, col);
+    if (!isTable(row, col)) {
+      removeCellBorder(cell);
+    }
   }
 }
 
@@ -61,10 +66,35 @@ for (let row = TABLE.topRow; row <= TABLE.bottomRow; row++) {
 }
 
 sheet.views = [{ showGridLines: false, zoomScale: 100 }];
-
-while (sheet.rowCount > 16) {
-  sheet.spliceRows(17, 1);
-}
+sheet.pageSetup = {
+  ...sheet.pageSetup,
+  showGridLines: false,
+  showRowColHeaders: false,
+  printArea: 'B1:F15',
+  fitToPage: true,
+  fitToWidth: 1,
+  fitToHeight: 1,
+  orientation: 'portrait',
+};
 
 await wb.xlsx.writeFile('public/payslip-template.xlsx');
-console.log('template updated, rowCount', sheet.rowCount);
+
+function hasBorder(cell) {
+  const b = cell.border || {};
+  return !!(b.top?.style || b.bottom?.style || b.left?.style || b.right?.style);
+}
+
+const wb2 = new ExcelJS.Workbook();
+await wb2.xlsx.readFile('public/payslip-template.xlsx');
+const s = wb2.getWorksheet('D(프리랜서_)');
+let inside = 0;
+let outside = 0;
+for (let row = 1; row <= s.rowCount; row++) {
+  for (let col = 1; col <= TABLE.rightCol + 2; col++) {
+    if (hasBorder(s.getCell(row, col))) {
+      if (isTable(row, col)) inside++;
+      else outside++;
+    }
+  }
+}
+console.log('inside', inside, 'outside', outside, 'rowCount', s.rowCount);
