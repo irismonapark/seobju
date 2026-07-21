@@ -17,22 +17,22 @@ import {
 const PAYSLIP_TEMPLATE_PATH = '/payslip-template.xlsx';
 const PAYSLIP_SHEET = 'D(프리랜서_)';
 
-/** D파일(3번) 양식 셀 위치 — ExcelJS 1-based */
+/** D파일(3번) 양식 셀 위치 — ExcelJS 1-based (B=항목, C=시간, D=금액) */
 const PAYSLIP_CELL = {
   TITLE: { row: 1, col: 2 },
   NAME: { row: 2, col: 6 },
-  BASE: { row: 4, hours: 2, amount: 3 },
-  OT: { row: 5, hours: 2, amount: 3 },
-  NIGHT: { row: 6, hours: 2, amount: 3 },
-  HOL: { row: 7, hours: 2, amount: 3 },
-  HOT: { row: 8, hours: 2, amount: 3 },
-  EVENT: { row: 9, hours: 2, amount: 3 },
-  FULL_ATTEND: { row: 10, hours: 2, amount: 3 },
+  BASE: { row: 4, label: 2, hours: 3, amount: 4 },
+  OT: { row: 5, label: 2, hours: 3, amount: 4 },
+  NIGHT: { row: 6, label: 2, hours: 3, amount: 4 },
+  HOL: { row: 7, label: 2, hours: 3, amount: 4 },
+  HOT: { row: 8, label: 2, hours: 3, amount: 4 },
+  EVENT: { row: 9, label: 2, hours: 3, amount: 4 },
+  FULL_ATTEND: { row: 10, label: 2, hours: 3, amount: 4 },
   BLANK_DEDUCT_ROWS: [4, 5, 6, 7] as const,
   INCOME_TAX: { row: 8, col: 6 },
   LOCAL_TAX: { row: 9, col: 6 },
   DEDUCT_TOTAL: { row: 13, col: 6 },
-  GROSS: { row: 14, hours: 2, amount: 3 },
+  GROSS: { row: 14, label: 2, hours: 3, amount: 4 },
   NET: { row: 14, col: 6 },
 } as const;
 
@@ -61,13 +61,26 @@ function setAmountCell(sheet: ExcelJS.Worksheet, row: number, col: number, value
 function setPayItemCell(
   sheet: ExcelJS.Worksheet,
   row: number,
+  labelCol: number,
   hoursCol: number,
   amountCol: number,
+  label: string,
   hours: number,
   amount: number,
 ): void {
+  sheet.getCell(row, labelCol).value = label;
   sheet.getCell(row, hoursCol).value = hours;
   setAmountCell(sheet, row, amountCol, amount);
+}
+
+function fillPayRow(
+  sheet: ExcelJS.Worksheet,
+  cell: { row: number; label: number; hours: number; amount: number },
+  label: string,
+  hours: number,
+  amount: number,
+): void {
+  setPayItemCell(sheet, cell.row, cell.label, cell.hours, cell.amount, label, hours, amount);
 }
 
 function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void {
@@ -75,62 +88,13 @@ function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void 
     `${payslip.year}년 ${payslip.month}월 급여명세서`;
   sheet.getCell(PAYSLIP_CELL.NAME.row, PAYSLIP_CELL.NAME.col).value = `${payslip.성명} 님`;
 
-  setPayItemCell(
-    sheet,
-    PAYSLIP_CELL.BASE.row,
-    PAYSLIP_CELL.BASE.hours,
-    PAYSLIP_CELL.BASE.amount,
-    payslip.기본급시간,
-    payslip.기본급,
-  );
-  setPayItemCell(
-    sheet,
-    PAYSLIP_CELL.OT.row,
-    PAYSLIP_CELL.OT.hours,
-    PAYSLIP_CELL.OT.amount,
-    payslip.연장시간,
-    payslip.연장,
-  );
-  setPayItemCell(
-    sheet,
-    PAYSLIP_CELL.NIGHT.row,
-    PAYSLIP_CELL.NIGHT.hours,
-    PAYSLIP_CELL.NIGHT.amount,
-    payslip.심야수당시간,
-    payslip.심야수당,
-  );
-  setPayItemCell(
-    sheet,
-    PAYSLIP_CELL.HOL.row,
-    PAYSLIP_CELL.HOL.hours,
-    PAYSLIP_CELL.HOL.amount,
-    payslip.주특시간,
-    payslip.주특,
-  );
-  setPayItemCell(
-    sheet,
-    PAYSLIP_CELL.HOT.row,
-    PAYSLIP_CELL.HOT.hours,
-    PAYSLIP_CELL.HOT.amount,
-    payslip.특잔시간,
-    payslip.특잔,
-  );
-  setPayItemCell(
-    sheet,
-    PAYSLIP_CELL.EVENT.row,
-    PAYSLIP_CELL.EVENT.hours,
-    PAYSLIP_CELL.EVENT.amount,
-    0,
-    payslip.경조사비,
-  );
-  setPayItemCell(
-    sheet,
-    PAYSLIP_CELL.FULL_ATTEND.row,
-    PAYSLIP_CELL.FULL_ATTEND.hours,
-    PAYSLIP_CELL.FULL_ATTEND.amount,
-    0,
-    payslip.만근수당,
-  );
+  fillPayRow(sheet, PAYSLIP_CELL.BASE, '기본급', payslip.기본급시간, payslip.기본급);
+  fillPayRow(sheet, PAYSLIP_CELL.OT, '연장', payslip.연장시간, payslip.연장);
+  fillPayRow(sheet, PAYSLIP_CELL.NIGHT, '심야수당', payslip.심야수당시간, payslip.심야수당);
+  fillPayRow(sheet, PAYSLIP_CELL.HOL, '주특', payslip.주특시간, payslip.주특);
+  fillPayRow(sheet, PAYSLIP_CELL.HOT, '특잔', payslip.특잔시간, payslip.특잔);
+  fillPayRow(sheet, PAYSLIP_CELL.EVENT, '경조사비', 0, payslip.경조사비);
+  fillPayRow(sheet, PAYSLIP_CELL.FULL_ATTEND, '만근수당', 0, payslip.만근수당);
 
   for (const row of PAYSLIP_CELL.BLANK_DEDUCT_ROWS) {
     sheet.getCell(row, 6).value = null;
@@ -154,8 +118,13 @@ function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void 
     PAYSLIP_CELL.DEDUCT_TOTAL.col,
     payslip.공제총액,
   );
-  setAmountCell(sheet, PAYSLIP_CELL.GROSS.row, PAYSLIP_CELL.GROSS.amount, payslip.급여총액);
+  sheet.getCell(PAYSLIP_CELL.GROSS.row, PAYSLIP_CELL.GROSS.label).value = '급여총액';
   sheet.getCell(PAYSLIP_CELL.GROSS.row, PAYSLIP_CELL.GROSS.hours).value = null;
+  setAmountCell(sheet, PAYSLIP_CELL.GROSS.row, PAYSLIP_CELL.GROSS.amount, payslip.급여총액);
+  sheet.getCell(PAYSLIP_CELL.DEDUCT_TOTAL.row, 5).value = '공제총액';
+  sheet.getCell(PAYSLIP_CELL.GROSS.row, 5).value = '실수령액';
+  sheet.getCell(PAYSLIP_CELL.INCOME_TAX.row, 5).value = '근로소득세(3%)';
+  sheet.getCell(PAYSLIP_CELL.LOCAL_TAX.row, 5).value = '지방소득세(0.3%)';
   setAmountCell(sheet, PAYSLIP_CELL.NET.row, PAYSLIP_CELL.NET.col, payslip.실수령액);
 }
 
