@@ -206,11 +206,11 @@ function buildPayslipHtml(payslip: PayslipData): string {
     deductLabel: string,
     deductAmount?: number,
   ) => `<tr>
-    <td class="label">${payLabel}</td>
+    <td class="label pay">${payLabel}</td>
     <td class="hours">${fmtHours(hours)}</td>
-    <td class="amount">${fmtAmount(payAmount)}</td>
+    <td class="amount pay">${fmtAmount(payAmount)}</td>
     <td class="label deduct">${deductLabel}</td>
-    <td class="amount">${deductAmount === undefined ? '' : fmt(deductAmount)}</td>
+    <td class="amount deduct">${deductAmount === undefined ? '' : fmt(deductAmount)}</td>
   </tr>`;
 
   return `
@@ -218,6 +218,13 @@ function buildPayslipHtml(payslip: PayslipData): string {
       <div class="title">${title}</div>
       <div class="name">${payslip.성명} 님</div>
       <table>
+        <colgroup>
+          <col class="col-pay-label" />
+          <col class="col-hours" />
+          <col class="col-pay-amount" />
+          <col class="col-deduct-label" />
+          <col class="col-deduct-amount" />
+        </colgroup>
         <thead>
           <tr>
             <th colspan="3">급&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;여</th>
@@ -225,26 +232,26 @@ function buildPayslipHtml(payslip: PayslipData): string {
           </tr>
         </thead>
         <tbody>
-          ${payRow('기&nbsp;&nbsp;본&nbsp;&nbsp;급', payslip.기본급시간, payslip.기본급, '국&nbsp;&nbsp;민&nbsp;&nbsp;연&nbsp;&nbsp;금')}
-          ${payRow('연장', payslip.연장시간, payslip.연장, '건&nbsp;&nbsp;강&nbsp;&nbsp;보&nbsp;&nbsp;험')}
-          ${payRow('심야수당', payslip.심야수당시간, payslip.심야수당, '장 기 요 양 보 험')}
+          ${payRow('기본급', payslip.기본급시간, payslip.기본급, '국민연금')}
+          ${payRow('연장', payslip.연장시간, payslip.연장, '건강보험')}
+          ${payRow('심야수당', payslip.심야수당시간, payslip.심야수당, '장기요양보험')}
           ${payRow('주특', payslip.주특시간, payslip.주특, '고용보험')}
-          ${payRow('특잔', payslip.특잔시간, payslip.특잔, '근로소득세 (3%)', payslip.근로소득세)}
-          ${payRow('경조사비', 0, payslip.경조사비, '지방소득세 (0.3%)', payslip.지방소득세)}
+          ${payRow('특잔', payslip.특잔시간, payslip.특잔, '근로소득세(3%)', payslip.근로소득세)}
+          ${payRow('경조사비', 0, payslip.경조사비, '지방소득세(0.3%)', payslip.지방소득세)}
           ${payRow('만근수당', 0, payslip.만근수당, '', undefined)}
           <tr class="summary">
-            <td class="label"></td>
+            <td class="label pay"></td>
             <td class="hours"></td>
-            <td class="amount"></td>
-            <td class="label deduct">공&nbsp;&nbsp;제&nbsp;&nbsp;총&nbsp;&nbsp;액</td>
-            <td class="amount">${fmt(payslip.공제총액)}</td>
+            <td class="amount pay"></td>
+            <td class="label deduct">공제총액</td>
+            <td class="amount deduct">${fmt(payslip.공제총액)}</td>
           </tr>
           <tr class="summary">
-            <td class="label">급&nbsp;&nbsp;여&nbsp;&nbsp;총&nbsp;&nbsp;액</td>
+            <td class="label pay">급여총액</td>
             <td class="hours"></td>
-            <td class="amount">${fmt(payslip.급여총액)}</td>
-            <td class="label deduct">실&nbsp;&nbsp;수&nbsp;&nbsp;령&nbsp;&nbsp;액</td>
-            <td class="amount">${fmt(payslip.실수령액)}</td>
+            <td class="amount pay">${fmt(payslip.급여총액)}</td>
+            <td class="label deduct">실수령액</td>
+            <td class="amount deduct">${fmt(payslip.실수령액)}</td>
           </tr>
         </tbody>
       </table>
@@ -254,18 +261,92 @@ function buildPayslipHtml(payslip: PayslipData): string {
 }
 
 const PAYSLIP_CSS = `
-  .payslip { width: 560px; padding: 28px 36px; background: #fff; color: #000; font-size: 14px; line-height: 1.45; }
-  .title { text-align: left; font-size: 22px; font-weight: bold; margin-bottom: 8px; text-decoration: underline; letter-spacing: 0.05em; }
-  .name { text-align: right; font-size: 15px; margin-bottom: 14px; text-decoration: underline; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
-  th { text-align: center; font-weight: normal; padding: 8px 4px; border: 1px solid #000; background: #d9d9d9; }
-  td { padding: 7px 6px; vertical-align: middle; border: 1px solid #000; }
-  .label { width: 18%; text-align: center; white-space: nowrap; }
-  .label.deduct { width: 22%; }
-  .hours { width: 12%; text-align: center; }
-  .amount { width: 18%; text-align: right; padding-right: 10px; }
-  tr.summary td { background: #d9d9d9; font-weight: bold; }
-  .footer { text-align: center; margin-top: 18px; padding: 10px 8px; background: #b4c7e7; border: 1px solid #000; font-size: 14px; }
+  .payslip {
+    width: 680px;
+    max-width: 100%;
+    padding: 24px 28px;
+    background: #fff;
+    color: #000;
+    font-size: 13px;
+    line-height: 1.4;
+    box-sizing: border-box;
+  }
+  .title {
+    text-align: left;
+    font-size: 21px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-decoration: underline;
+    letter-spacing: 0.04em;
+  }
+  .name {
+    text-align: right;
+    font-size: 14px;
+    margin-bottom: 12px;
+    text-decoration: underline;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    border: 1px solid #000;
+  }
+  col.col-pay-label { width: 17%; }
+  col.col-hours { width: 48px; }
+  col.col-pay-amount { width: 21%; }
+  col.col-deduct-label { width: 30%; }
+  col.col-deduct-amount { width: 18%; }
+  th {
+    text-align: center;
+    font-weight: normal;
+    padding: 7px 4px;
+    border: 1px solid #000;
+    background: #d9d9d9;
+    font-size: 13px;
+  }
+  td {
+    padding: 6px 4px;
+    vertical-align: middle;
+    border: 1px solid #000;
+    overflow: hidden;
+  }
+  .label.pay {
+    text-align: center;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .label.deduct {
+    text-align: center;
+    font-size: 11.5px;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+    padding: 6px 3px;
+  }
+  .hours {
+    text-align: center;
+    font-size: 12px;
+    padding: 6px 2px;
+    white-space: nowrap;
+  }
+  .amount {
+    text-align: right;
+    padding-right: 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  tr.summary td {
+    background: #d9d9d9;
+    font-weight: bold;
+    font-size: 12.5px;
+  }
+  .footer {
+    text-align: center;
+    margin-top: 16px;
+    padding: 10px 8px;
+    background: #b4c7e7;
+    border: 1px solid #000;
+    font-size: 13px;
+  }
 `;
 
 /** A4 출력용 — scale 2 PNG 대비 용량 대폭 절감 */
