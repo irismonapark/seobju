@@ -185,7 +185,17 @@ function buildRowTotalFormula(rowNum: number): string {
   const indirect = excelColumnLetter(INVOICE_COL.INDIRECT);
   const fullAttend = excelColumnLetter(INVOICE_COL.FULL_ATTEND);
   const event = excelColumnLetter(INVOICE_COL.EVENT);
-  return `ROUNDDOWN(${direct}${rowNum}+${indirect}${rowNum}+${fullAttend}${rowNum}+${event}${rowNum},-1)`;
+  const fullAttendVal = `IF(${fullAttend}${rowNum}="",0,${fullAttend}${rowNum})`;
+  const eventVal = `IF(${event}${rowNum}="",0,${event}${rowNum})`;
+  return `ROUNDDOWN(${direct}${rowNum}+${indirect}${rowNum}+${fullAttendVal}+${eventVal},-1)`;
+}
+
+function setFormulaCell(
+  cell: ExcelJS.Cell,
+  formula: string,
+  result: number,
+): void {
+  cell.value = { formula, result };
 }
 
 function isSummaryRow(noText: string, name: string): boolean {
@@ -333,7 +343,12 @@ function setCellValue(row: ExcelJS.Row, col: number, value: number | string | nu
   row.getCell(col).value = value;
 }
 
-function fillInvoiceRow(row: ExcelJS.Row, invoice: InvoiceRow, dept: string): void {
+function fillInvoiceRow(
+  row: ExcelJS.Row,
+  invoice: InvoiceRow,
+  dept: string,
+  rowNum: number,
+): void {
   setCellValue(row, INVOICE_COL.DEPT, dept);
   setCellValue(row, INVOICE_COL.SEQ, invoice.순번);
   row.getCell(INVOICE_COL.NAME).value = invoice.성명;
@@ -360,9 +375,11 @@ function fillInvoiceRow(row: ExcelJS.Row, invoice: InvoiceRow, dept: string): vo
   setCellValue(row, INVOICE_COL.MGMT, invoice.관리비);
   setCellValue(row, INVOICE_COL.INDIRECT, invoice.간접비소계);
   row.getCell(INVOICE_COL.EVENT).value = null;
-  row.getCell(INVOICE_COL.TOTAL).value = {
-    formula: buildRowTotalFormula(row.number),
-  };
+  setFormulaCell(
+    row.getCell(INVOICE_COL.TOTAL),
+    buildRowTotalFormula(rowNum),
+    roundOnesDigit(invoice.급여총액),
+  );
 }
 
 async function loadTemplateWorkbook(): Promise<ExcelJS.Workbook> {
@@ -627,12 +644,16 @@ function fillTotalRow(
       const firstRow = DATA_START_ROW;
       const lastRow = DATA_START_ROW + invoices.length - 1;
       const totalCol = excelColumnLetter(INVOICE_COL.TOTAL);
-      cell.value = { formula: `SUM(${totalCol}${firstRow}:${totalCol}${lastRow})` };
+      const sumResult = invoices.reduce(
+        (sum, invoice) => sum + roundOnesDigit(invoice.급여총액),
+        0,
+      );
+      setFormulaCell(cell, `SUM(${totalCol}${firstRow}:${totalCol}${lastRow})`, sumResult);
     } else if (col === INVOICE_COL.FULL_ATTEND || col === INVOICE_COL.EVENT) {
       const colLetter = excelColumnLetter(col);
       const firstRow = DATA_START_ROW;
       const lastRow = DATA_START_ROW + invoices.length - 1;
-      cell.value = { formula: `SUM(${colLetter}${firstRow}:${colLetter}${lastRow})` };
+      setFormulaCell(cell, `SUM(${colLetter}${firstRow}:${colLetter}${lastRow})`, 0);
     } else {
       cell.value = invoices.reduce((acc, invoice) => acc + getInvoiceColumnValue(invoice, col), 0);
     }
@@ -777,7 +798,7 @@ async function writeInvoiceWorkbook(
     const rowNum = DATA_START_ROW + index;
     const row = sheet.getRow(rowNum);
     applyDataRowStyles(row, dataRowStyles);
-    fillInvoiceRow(row, invoice, records[index]?.dept ?? '');
+    fillInvoiceRow(row, invoice, records[index]?.dept ?? '', rowNum);
     row.commit();
   });
 
