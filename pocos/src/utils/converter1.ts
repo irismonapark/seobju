@@ -414,32 +414,96 @@ function stripSheetFormulas(sheet: ExcelJS.Worksheet): void {
 
 type RowStyleSnapshot = Map<number, Partial<ExcelJS.Style>>;
 
+const AMOUNT_HEADER_LABELS: ReadonlyArray<{ col: number; label: string }> = [
+  { col: INVOICE_COL.FULL_ATTEND, label: '만근수당' },
+  { col: INVOICE_COL.DIRECT, label: '직접비\n소계' },
+  { col: INVOICE_COL.PENSION, label: '국민' },
+  { col: INVOICE_COL.HEALTH, label: '건강보험' },
+  { col: INVOICE_COL.LONGTERM, label: '장기요양' },
+  { col: INVOICE_COL.EMPLOY, label: '고용보험' },
+  { col: INVOICE_COL.INDUST, label: '산재보험' },
+  { col: INVOICE_COL.MGMT, label: '관리비' },
+  { col: INVOICE_COL.INDIRECT, label: '간접비\n소계' },
+  { col: INVOICE_COL.EVENT, label: '경상조비' },
+  { col: INVOICE_COL.TOTAL, label: '총액' },
+];
+
 const LEGACY_TRANSPORT_COL = 20;
+
+function columnLettersToIndex(letters: string): number {
+  let result = 0;
+  for (const ch of letters) {
+    result = result * 26 + (ch.charCodeAt(0) - 64);
+  }
+  return result;
+}
+
+function unmergeCellsInRange(
+  sheet: ExcelJS.Worksheet,
+  rowFrom: number,
+  rowTo: number,
+  colFrom: number,
+  colTo: number,
+): void {
+  for (const range of [...(sheet.model.merges ?? [])]) {
+    const match = range.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    if (!match) continue;
+
+    const startCol = columnLettersToIndex(match[1]);
+    const endCol = columnLettersToIndex(match[3]);
+    const startRow = Number(match[2]);
+    const endRow = Number(match[4]);
+
+    if (startRow <= rowTo && endRow >= rowFrom && startCol <= colTo && endCol >= colFrom) {
+      try {
+        sheet.unMergeCells(range);
+      } catch {
+        // ignore
+      }
+    }
+  }
+}
+
+function fixSummaryRowMerges(sheet: ExcelJS.Worksheet): void {
+  for (const rowNum of TEMPLATE_SUMMARY_ROWS) {
+    unmergeCellsInRange(sheet, rowNum, rowNum, SUMMARY_VALUE_COL, 30);
+  }
+}
 
 function removeTransportColumn(sheet: ExcelJS.Worksheet): void {
   const legacyTotalHeader = String(sheet.getCell(3, 30).value ?? '').replace(/\s/g, '');
   if (!legacyTotalHeader.includes('총액')) return;
   sheet.spliceColumns(LEGACY_TRANSPORT_COL, 1);
+  fixSummaryRowMerges(sheet);
 }
 
-function updateInvoiceHeaders(sheet: ExcelJS.Worksheet): void {
-  try {
-    sheet.unMergeCells(3, INVOICE_COL.FULL_ATTEND, 4, INVOICE_COL.FULL_ATTEND);
-  } catch {
-    // ignore if not merged
+function rebuildInvoiceAmountHeaders(sheet: ExcelJS.Worksheet): void {
+  unmergeCellsInRange(sheet, 3, 4, INVOICE_COL.FULL_ATTEND, INVOICE_COL.TOTAL + 1);
+
+  for (let col = INVOICE_COL.FULL_ATTEND; col <= INVOICE_COL.TOTAL + 1; col++) {
+    sheet.getCell(4, col).value = null;
+    if (col > INVOICE_COL.TOTAL) {
+      sheet.getCell(3, col).value = null;
+    }
   }
 
-  sheet.getCell(3, INVOICE_COL.FULL_ATTEND).value = '만근수당';
-  sheet.getCell(4, INVOICE_COL.FULL_ATTEND).value = '금액';
+  for (const { col, label } of AMOUNT_HEADER_LABELS) {
+    const headerCell = sheet.getCell(3, col);
+    headerCell.value = label;
+    headerCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
 
-  const fullAttendCol = sheet.getColumn(INVOICE_COL.FULL_ATTEND);
-  fullAttendCol.hidden = false;
-  fullAttendCol.width = COLUMN_WIDTHS[INVOICE_COL.FULL_ATTEND] ?? 12;
+    try {
+      sheet.mergeCells(3, col, 4, col);
+    } catch {
+      // ignore
+    }
 
-  for (const rowNum of [3, 4]) {
-    const cell = sheet.getCell(rowNum, INVOICE_COL.FULL_ATTEND);
-    cell.border = { ...GRID_BORDER };
+    for (const rowNum of [3, 4]) {
+      sheet.getCell(rowNum, col).border = { ...GRID_BORDER };
+    }
   }
+
+  sheet.getColumn(INVOICE_COL.FULL_ATTEND).hidden = false;
 }
 
 function updateSheetTitle(sheet: ExcelJS.Worksheet, year: number, month: string): void {
@@ -787,7 +851,7 @@ async function writeInvoiceWorkbook(
   stripSheetFormulas(sheet);
   removeTransportColumn(sheet);
   updateSheetTitle(sheet, year, month);
-  updateInvoiceHeaders(sheet);
+  rebuildInvoiceAmountHeaders(sheet);
   applySheetColumnWidths(sheet);
 
   const totalRowStyles = captureRowStyles(sheet, TEMPLATE_TOTAL_ROW);
