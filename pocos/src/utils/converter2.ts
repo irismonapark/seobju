@@ -31,28 +31,21 @@ const PAYSLIP_CELL = {
   BLANK_DEDUCT_ROWS: [4, 5, 6, 7] as const,
   INCOME_TAX: { row: 8, col: 6 },
   LOCAL_TAX: { row: 9, col: 6 },
-  DEDUCT_TOTAL: { row: 12, col: 6 },
-  GROSS: { row: 13, label: 2, hours: 3, amount: 4 },
-  NET: { row: 13, col: 6 },
+  DEDUCT_TOTAL: { row: 13, col: 6 },
+  GROSS: { row: 14, label: 2, hours: 3, amount: 4 },
+  NET: { row: 14, col: 6 },
 } as const;
 
-/** 급여명세서 본문 테이블 (B3:F13) — 외곽 medium, 내부 thin */
+/** 급여명세서 본문 테이블 (B3:F14) — 외곽 medium, 내부 thin */
 const PAYSLIP_TABLE = {
   topRow: 3,
-  bottomRow: 13,
+  bottomRow: 14,
   leftCol: 2,
   rightCol: 6,
 } as const;
 
-const PAYSLIP_BORDER_NONE: Partial<ExcelJS.Border> = {};
 const PAYSLIP_BORDER_THIN: Partial<ExcelJS.Border> = { style: 'thin' };
 const PAYSLIP_BORDER_MEDIUM: Partial<ExcelJS.Border> = { style: 'medium' };
-const PAYSLIP_CLEAR_BORDER: Partial<ExcelJS.Borders> = {
-  top: PAYSLIP_BORDER_NONE,
-  left: PAYSLIP_BORDER_NONE,
-  bottom: PAYSLIP_BORDER_NONE,
-  right: PAYSLIP_BORDER_NONE,
-};
 
 function payslipCellBorder(row: number, col: number): Partial<ExcelJS.Borders> {
   const { topRow, bottomRow, leftCol, rightCol } = PAYSLIP_TABLE;
@@ -64,19 +57,36 @@ function payslipCellBorder(row: number, col: number): Partial<ExcelJS.Borders> {
   };
 }
 
-/** 테이블(B3:F13) 밖·공란 셀 테두리 제거 */
-function clearPayslipExtraBorders(sheet: ExcelJS.Worksheet): void {
+function isPayslipTableCell(row: number, col: number): boolean {
   const { topRow, bottomRow, leftCol, rightCol } = PAYSLIP_TABLE;
-  const maxRow = Math.max(sheet.rowCount, 30);
-  const maxCol = 12;
+  return row >= topRow && row <= bottomRow && col >= leftCol && col <= rightCol;
+}
 
-  for (let row = 1; row <= maxRow; row++) {
-    for (let col = 1; col <= maxCol; col++) {
-      const inTable =
-        row >= topRow && row <= bottomRow && col >= leftCol && col <= rightCol;
-      if (!inTable) {
-        sheet.getCell(row, col).border = PAYSLIP_CLEAR_BORDER;
+function removeCellBorder(cell: ExcelJS.Cell): void {
+  if (!cell.border) return;
+  const nextStyle = { ...cell.style } as Partial<ExcelJS.Style> & { border?: Partial<ExcelJS.Borders> };
+  delete nextStyle.border;
+  cell.style = nextStyle;
+}
+
+/** 테이블 밖 셀에 남아 있는 테두리만 제거 (빈 border 객체를 넣지 않음) */
+function clearPayslipExtraBorders(sheet: ExcelJS.Worksheet): void {
+  sheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+    row.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+      if (!isPayslipTableCell(rowNumber, colNumber)) {
+        removeCellBorder(cell);
       }
+    });
+  });
+
+  for (let row = 1; row < PAYSLIP_TABLE.topRow; row++) {
+    for (let col = 1; col <= 10; col++) {
+      removeCellBorder(sheet.getCell(row, col));
+    }
+  }
+  for (let row = PAYSLIP_TABLE.bottomRow + 1; row <= 25; row++) {
+    for (let col = 1; col <= 10; col++) {
+      removeCellBorder(sheet.getCell(row, col));
     }
   }
 }
@@ -88,7 +98,14 @@ function applyPayslipTableBorders(sheet: ExcelJS.Worksheet): void {
       sheet.getCell(row, col).border = payslipCellBorder(row, col);
     }
   }
-  sheet.views = [{ showGridLines: false }];
+  sheet.views = [{ showGridLines: false, zoomScale: 100 }];
+}
+
+function trimPayslipSheetRows(sheet: ExcelJS.Worksheet): void {
+  const lastRow = 16;
+  while (sheet.rowCount > lastRow) {
+    sheet.spliceRows(lastRow + 1, 1);
+  }
 }
 
 function sanitizeFileName(name: string): string {
@@ -182,11 +199,8 @@ function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void 
   sheet.getCell(PAYSLIP_CELL.LOCAL_TAX.row, 5).value = '지방소득세(0.3%)';
   setAmountCell(sheet, PAYSLIP_CELL.NET.row, PAYSLIP_CELL.NET.col, payslip.실수령액);
 
-  for (let col = PAYSLIP_TABLE.leftCol; col <= PAYSLIP_TABLE.rightCol; col++) {
-    sheet.getCell(14, col).value = null;
-  }
-
   applyPayslipTableBorders(sheet);
+  trimPayslipSheetRows(sheet);
 }
 
 async function loadPayslipTemplate(): Promise<ExcelJS.Workbook> {
