@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import type { GeneratedFile, PayslipData } from '../types';
@@ -84,7 +85,12 @@ function clearPayslipExtraBorders(sheet: ExcelJS.Worksheet): void {
 }
 
 function configurePayslipPrint(sheet: ExcelJS.Worksheet): void {
-  sheet.views = [{ showGridLines: false, zoomScale: 100 }];
+  sheet.getColumn(1).hidden = true;
+  for (let col = PAYSLIP_TABLE.rightCol + 1; col <= 40; col++) {
+    sheet.getColumn(col).hidden = true;
+  }
+
+  sheet.views = [{ showGridLines: false, zoomScale: 100, activeCell: 'B4' }];
   sheet.pageSetup = {
     ...sheet.pageSetup,
     showGridLines: false,
@@ -95,6 +101,38 @@ function configurePayslipPrint(sheet: ExcelJS.Worksheet): void {
     fitToHeight: 1,
     orientation: 'portrait',
   };
+}
+
+/** 한컴/엑셀 격자선·인쇄 옵션 XML 보정 */
+async function finalizePayslipXlsxBuffer(buffer: ArrayBuffer): Promise<ArrayBuffer> {
+  const zip = await JSZip.loadAsync(buffer);
+  const sheetPath = Object.keys(zip.files).find((name) =>
+    /^xl\/worksheets\/sheet\d+\.xml$/.test(name),
+  );
+  if (!sheetPath) return buffer;
+
+  let xml = await zip.file(sheetPath)!.async('string');
+
+  if (xml.includes('<sheetView ')) {
+    xml = xml.replace(/<sheetView([^>]*?)>/, (_match, attrs: string) => {
+      const next = attrs.replace(/\sshowGridLines="[^"]*"/, '');
+      return `<sheetView${next} showGridLines="0">`;
+    });
+  }
+
+  const printOptions = '<printOptions gridLines="0" headings="0"/>';
+  if (xml.includes('<printOptions')) {
+    xml = xml.replace(/<printOptions[^>]*\/>/, printOptions);
+  } else if (xml.includes('</sheetData>')) {
+    xml = xml.replace('</sheetData>', `</sheetData>${printOptions}`);
+  }
+
+  if (xml.includes('<dimension ')) {
+    xml = xml.replace(/<dimension ref="[^"]*"/, '<dimension ref="B1:F15"');
+  }
+
+  zip.file(sheetPath, xml);
+  return zip.generateAsync({ type: 'arraybuffer', compression: 'DEFLATE' });
 }
 
 function applyPayslipTableBorders(sheet: ExcelJS.Worksheet): void {
@@ -242,7 +280,12 @@ async function createPayslipExcel(payslip: PayslipData): Promise<Blob> {
   fillPayslipSheet(sheet, payslip);
   sheet.name = buildPayslipSheetName(payslip);
 
-  const buffer = await workbook.xlsx.writeBuffer();
+  const rawBuffer = await workbook.xlsx.writeBuffer();
+  const inputBuffer =
+    rawBuffer instanceof ArrayBuffer
+      ? rawBuffer
+      : new Uint8Array(rawBuffer as unknown as ArrayLike<number>).buffer;
+  const buffer = await finalizePayslipXlsxBuffer(inputBuffer);
   return new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
