@@ -34,8 +34,8 @@ const TEMPLATE_PATH = '/invoice-template.xlsx';
 const DATA_START_ROW = 5;
 const TEMPLATE_TOTAL_ROW = 176;
 const TEMPLATE_SUMMARY_ROWS = [178, 179, 180] as const;
-const SUMMARY_LABEL_COL = 28;
-const SUMMARY_VALUE_COL = 29;
+const SUMMARY_LABEL_COL = 27;
+const SUMMARY_VALUE_COL = 28;
 
 const INVOICE_COL = {
   DEPT: 4,
@@ -53,16 +53,16 @@ const INVOICE_COL = {
   HOT_H: 17,
   HOT_A: 18,
   FULL_ATTEND: 19,
-  DIRECT: 21,
-  PENSION: 22,
-  HEALTH: 23,
-  LONGTERM: 24,
-  EMPLOY: 25,
-  INDUST: 26,
-  MGMT: 27,
-  INDIRECT: 28,
-  EVENT: 29,
-  TOTAL: 30,
+  DIRECT: 20,
+  PENSION: 21,
+  HEALTH: 22,
+  LONGTERM: 23,
+  EMPLOY: 24,
+  INDUST: 25,
+  MGMT: 26,
+  INDIRECT: 27,
+  EVENT: 28,
+  TOTAL: 29,
 } as const;
 
 const SUM_COLUMNS = [
@@ -399,30 +399,30 @@ type RowStyleSnapshot = Map<number, Partial<ExcelJS.Style>>;
 
 const LEGACY_TRANSPORT_COL = 20;
 
+function removeTransportColumn(sheet: ExcelJS.Worksheet): void {
+  const legacyTotalHeader = String(sheet.getCell(3, 30).value ?? '').replace(/\s/g, '');
+  if (!legacyTotalHeader.includes('총액')) return;
+  sheet.spliceColumns(LEGACY_TRANSPORT_COL, 1);
+}
+
 function updateInvoiceHeaders(sheet: ExcelJS.Worksheet): void {
   try {
     sheet.unMergeCells(3, INVOICE_COL.FULL_ATTEND, 4, INVOICE_COL.FULL_ATTEND);
   } catch {
     // ignore if not merged
   }
-  try {
-    sheet.unMergeCells(3, LEGACY_TRANSPORT_COL, 4, LEGACY_TRANSPORT_COL);
-  } catch {
-    // ignore if not merged
-  }
 
   sheet.getCell(3, INVOICE_COL.FULL_ATTEND).value = '만근수당';
   sheet.getCell(4, INVOICE_COL.FULL_ATTEND).value = '금액';
-  sheet.getCell(3, LEGACY_TRANSPORT_COL).value = null;
-  sheet.getCell(4, LEGACY_TRANSPORT_COL).value = null;
+
+  const fullAttendCol = sheet.getColumn(INVOICE_COL.FULL_ATTEND);
+  fullAttendCol.hidden = false;
+  fullAttendCol.width = COLUMN_WIDTHS[INVOICE_COL.FULL_ATTEND] ?? 12;
 
   for (const rowNum of [3, 4]) {
     const cell = sheet.getCell(rowNum, INVOICE_COL.FULL_ATTEND);
     cell.border = { ...GRID_BORDER };
   }
-
-  sheet.getColumn(LEGACY_TRANSPORT_COL).hidden = true;
-  sheet.getColumn(LEGACY_TRANSPORT_COL).width = 0;
 }
 
 function updateSheetTitle(sheet: ExcelJS.Worksheet, year: number, month: string): void {
@@ -504,7 +504,7 @@ function clearRowArea(row: ExcelJS.Row, fromCol: number, toCol: number): void {
   }
 }
 
-/** 총액(30열) 우측 및 청구총액 아래 불필요한 border·행 제거 */
+/** 총액 열 우측 및 청구총액 아래 불필요한 border·행 제거 */
 function finalizeSheetLayout(sheet: ExcelJS.Worksheet, lastContentRow: number): void {
   trimRowsBelow(sheet, lastContentRow);
 
@@ -664,7 +664,7 @@ function fillBottomSummary(
   rows.forEach(({ label, value, styleIndex }, index) => {
     const rowNum = startRow + index;
     try {
-      sheet.unMergeCells(rowNum, SUMMARY_VALUE_COL, rowNum, 30);
+      sheet.unMergeCells(rowNum, SUMMARY_VALUE_COL, rowNum, INVOICE_COL.TOTAL);
     } catch {
       // ignore if not merged
     }
@@ -673,7 +673,7 @@ function fillBottomSummary(
     clearRowArea(row, 4, 27);
 
     const styles = summaryStyles[styleIndex] ?? new Map();
-    applySelectedRowStyles(row, styles, [SUMMARY_LABEL_COL, SUMMARY_VALUE_COL, 30]);
+    applySelectedRowStyles(row, styles, [SUMMARY_LABEL_COL, SUMMARY_VALUE_COL, INVOICE_COL.TOTAL]);
 
     const labelCell = row.getCell(SUMMARY_LABEL_COL);
     labelCell.value = label;
@@ -690,8 +690,8 @@ function fillBottomSummary(
       ? (JSON.parse(JSON.stringify(valueStyle.border)) as Partial<ExcelJS.Borders>)
       : { ...GRID_BORDER };
 
-    const valueCell2 = row.getCell(30);
-    const valueStyle2 = styles.get(30);
+    const valueCell2 = row.getCell(INVOICE_COL.TOTAL);
+    const valueStyle2 = styles.get(INVOICE_COL.TOTAL);
     valueCell2.border = valueStyle2?.border
       ? (JSON.parse(JSON.stringify(valueStyle2.border)) as Partial<ExcelJS.Borders>)
       : { ...GRID_BORDER };
@@ -709,7 +709,7 @@ function fillBottomSummary(
     }
 
     try {
-      sheet.mergeCells(rowNum, SUMMARY_VALUE_COL, rowNum, 30);
+      sheet.mergeCells(rowNum, SUMMARY_VALUE_COL, rowNum, INVOICE_COL.TOTAL);
     } catch {
       // ignore
     }
@@ -764,6 +764,7 @@ async function writeInvoiceWorkbook(
   }
 
   stripSheetFormulas(sheet);
+  removeTransportColumn(sheet);
   updateSheetTitle(sheet, year, month);
   updateInvoiceHeaders(sheet);
   applySheetColumnWidths(sheet);
