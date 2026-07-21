@@ -36,6 +36,35 @@ const PAYSLIP_CELL = {
   NET: { row: 14, col: 6 },
 } as const;
 
+/** 급여명세서 본문 테이블 (B3:F14) — 외곽 medium, 내부 thin */
+const PAYSLIP_TABLE = {
+  topRow: 3,
+  bottomRow: 14,
+  leftCol: 2,
+  rightCol: 6,
+} as const;
+
+const PAYSLIP_BORDER_THIN: Partial<ExcelJS.Border> = { style: 'thin' };
+const PAYSLIP_BORDER_MEDIUM: Partial<ExcelJS.Border> = { style: 'medium' };
+
+function payslipCellBorder(row: number, col: number): Partial<ExcelJS.Borders> {
+  const { topRow, bottomRow, leftCol, rightCol } = PAYSLIP_TABLE;
+  return {
+    top: row === topRow ? PAYSLIP_BORDER_MEDIUM : PAYSLIP_BORDER_THIN,
+    bottom: row === bottomRow ? PAYSLIP_BORDER_MEDIUM : PAYSLIP_BORDER_THIN,
+    left: col === leftCol ? PAYSLIP_BORDER_MEDIUM : PAYSLIP_BORDER_THIN,
+    right: col === rightCol ? PAYSLIP_BORDER_MEDIUM : PAYSLIP_BORDER_THIN,
+  };
+}
+
+function applyPayslipTableBorders(sheet: ExcelJS.Worksheet): void {
+  for (let row = PAYSLIP_TABLE.topRow; row <= PAYSLIP_TABLE.bottomRow; row++) {
+    for (let col = PAYSLIP_TABLE.leftCol; col <= PAYSLIP_TABLE.rightCol; col++) {
+      sheet.getCell(row, col).border = payslipCellBorder(row, col);
+    }
+  }
+}
+
 function sanitizeFileName(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim();
 }
@@ -126,6 +155,7 @@ function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void 
   sheet.getCell(PAYSLIP_CELL.INCOME_TAX.row, 5).value = '근로소득세(3%)';
   sheet.getCell(PAYSLIP_CELL.LOCAL_TAX.row, 5).value = '지방소득세(0.3%)';
   setAmountCell(sheet, PAYSLIP_CELL.NET.row, PAYSLIP_CELL.NET.col, payslip.실수령액);
+  applyPayslipTableBorders(sheet);
 }
 
 async function loadPayslipTemplate(): Promise<ExcelJS.Workbook> {
