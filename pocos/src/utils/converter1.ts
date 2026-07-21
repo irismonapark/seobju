@@ -105,7 +105,6 @@ const DATA_STYLE_COLUMNS = [
   INVOICE_COL.HOT_H,
   INVOICE_COL.HOT_A,
   INVOICE_COL.FULL_ATTEND,
-  20,
   INVOICE_COL.DIRECT,
   INVOICE_COL.PENSION,
   INVOICE_COL.HEALTH,
@@ -135,7 +134,6 @@ const COLUMN_WIDTHS: Partial<Record<number, number>> = {
   [INVOICE_COL.HOT_H]: 10,
   [INVOICE_COL.HOT_A]: 14,
   [INVOICE_COL.FULL_ATTEND]: 12,
-  20: 10,
   [INVOICE_COL.DIRECT]: 14,
   [INVOICE_COL.PENSION]: 13,
   [INVOICE_COL.HEALTH]: 13,
@@ -399,9 +397,32 @@ function stripSheetFormulas(sheet: ExcelJS.Worksheet): void {
 
 type RowStyleSnapshot = Map<number, Partial<ExcelJS.Style>>;
 
+const LEGACY_TRANSPORT_COL = 20;
+
 function updateInvoiceHeaders(sheet: ExcelJS.Worksheet): void {
+  try {
+    sheet.unMergeCells(3, INVOICE_COL.FULL_ATTEND, 4, INVOICE_COL.FULL_ATTEND);
+  } catch {
+    // ignore if not merged
+  }
+  try {
+    sheet.unMergeCells(3, LEGACY_TRANSPORT_COL, 4, LEGACY_TRANSPORT_COL);
+  } catch {
+    // ignore if not merged
+  }
+
   sheet.getCell(3, INVOICE_COL.FULL_ATTEND).value = '만근수당';
-  sheet.getCell(4, INVOICE_COL.FULL_ATTEND).value = '만근수당';
+  sheet.getCell(4, INVOICE_COL.FULL_ATTEND).value = '금액';
+  sheet.getCell(3, LEGACY_TRANSPORT_COL).value = null;
+  sheet.getCell(4, LEGACY_TRANSPORT_COL).value = null;
+
+  for (const rowNum of [3, 4]) {
+    const cell = sheet.getCell(rowNum, INVOICE_COL.FULL_ATTEND);
+    cell.border = { ...GRID_BORDER };
+  }
+
+  sheet.getColumn(LEGACY_TRANSPORT_COL).hidden = true;
+  sheet.getColumn(LEGACY_TRANSPORT_COL).width = 0;
 }
 
 function updateSheetTitle(sheet: ExcelJS.Worksheet, year: number, month: string): void {
