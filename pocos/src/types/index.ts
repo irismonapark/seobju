@@ -26,6 +26,7 @@ export interface InvoiceRow {
   심야수당: CategoryPay;
   주특: CategoryPay;
   특잔: CategoryPay;
+  만근수당: number;
   직접비소계: number;
   국민연금: number;
   건강보험: number;
@@ -47,7 +48,13 @@ export interface PayslipData {
   심야수당: number;
   주특: number;
   특잔: number;
+  기본급시간: number;
+  연장시간: number;
+  심야수당시간: number;
+  주특시간: number;
+  특잔시간: number;
   경조사비: number;
+  만근수당: number;
   급여총액: number;
   근로소득세: number;
   지방소득세: number;

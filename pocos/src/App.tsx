@@ -9,44 +9,30 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  IconButton,
-  Tooltip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlineOutlined';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import System1 from './components/System1';
 import System2 from './components/System2';
 
 function App() {
   const [helpExpanded, setHelpExpanded] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleRefresh = () => {
-    setRefreshKey((prev) => prev + 1);
-    setHelpExpanded(false);
-  };
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
       <AppBar position="static" elevation={1} sx={{ bgcolor: '#00695C' }}>
         <Toolbar>
           <Typography variant="h6" component="h1" sx={{ flexGrow: 1 }}>
-            SJ-포코스 급여관리 시스템
+            주식회사 섭주-포코스 급여관리 시스템
           </Typography>
-          <Tooltip title="새로고침">
-            <IconButton color="inherit" onClick={handleRefresh} aria-label="새로고침">
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
         </Toolbar>
       </AppBar>
 
       <Container maxWidth="md" sx={{ py: { xs: 2, sm: 4 } }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <System1 key={`system1-${refreshKey}`} />
+          <System1 />
           <Divider />
-          <System2 key={`system2-${refreshKey}`} />
+          <System2 />
 
           <Accordion
             expanded={helpExpanded}

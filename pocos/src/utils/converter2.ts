@@ -21,18 +21,19 @@ const PAYSLIP_SHEET = 'D(프리랜서_)';
 const PAYSLIP_CELL = {
   TITLE: { row: 1, col: 2 },
   NAME: { row: 2, col: 6 },
-  BASE: { row: 4, col: 3 },
-  OT: { row: 5, col: 3 },
-  NIGHT: { row: 6, col: 3 },
-  HOL: { row: 7, col: 3 },
-  HOT: { row: 8, col: 3 },
-  EVENT: { row: 9, col: 3 },
+  BASE: { row: 4, hours: 2, amount: 3 },
+  OT: { row: 5, hours: 2, amount: 3 },
+  NIGHT: { row: 6, hours: 2, amount: 3 },
+  HOL: { row: 7, hours: 2, amount: 3 },
+  HOT: { row: 8, hours: 2, amount: 3 },
+  EVENT: { row: 9, hours: 2, amount: 3 },
+  FULL_ATTEND: { row: 10, hours: 2, amount: 3 },
   BLANK_DEDUCT_ROWS: [4, 5, 6, 7] as const,
   INCOME_TAX: { row: 8, col: 6 },
   LOCAL_TAX: { row: 9, col: 6 },
-  DEDUCT_TOTAL: { row: 12, col: 6 },
-  GROSS: { row: 13, col: 3 },
-  NET: { row: 13, col: 6 },
+  DEDUCT_TOTAL: { row: 13, col: 6 },
+  GROSS: { row: 14, hours: 2, amount: 3 },
+  NET: { row: 14, col: 6 },
 } as const;
 
 function sanitizeFileName(name: string): string {
@@ -54,7 +55,19 @@ function buildPayslipSheetName(payslip: PayslipData): string {
 }
 
 function setAmountCell(sheet: ExcelJS.Worksheet, row: number, col: number, value: number): void {
-  sheet.getCell(row, col).value = value;
+  sheet.getCell(row, col).value = value > 0 ? value : null;
+}
+
+function setPayItemCell(
+  sheet: ExcelJS.Worksheet,
+  row: number,
+  hoursCol: number,
+  amountCol: number,
+  hours: number,
+  amount: number,
+): void {
+  sheet.getCell(row, hoursCol).value = hours;
+  setAmountCell(sheet, row, amountCol, amount);
 }
 
 function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void {
@@ -62,12 +75,62 @@ function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void 
     `${payslip.year}년 ${payslip.month}월 급여명세서`;
   sheet.getCell(PAYSLIP_CELL.NAME.row, PAYSLIP_CELL.NAME.col).value = `${payslip.성명} 님`;
 
-  setAmountCell(sheet, PAYSLIP_CELL.BASE.row, PAYSLIP_CELL.BASE.col, payslip.기본급);
-  setAmountCell(sheet, PAYSLIP_CELL.OT.row, PAYSLIP_CELL.OT.col, payslip.연장);
-  setAmountCell(sheet, PAYSLIP_CELL.NIGHT.row, PAYSLIP_CELL.NIGHT.col, payslip.심야수당);
-  setAmountCell(sheet, PAYSLIP_CELL.HOL.row, PAYSLIP_CELL.HOL.col, payslip.주특);
-  setAmountCell(sheet, PAYSLIP_CELL.HOT.row, PAYSLIP_CELL.HOT.col, payslip.특잔);
-  setAmountCell(sheet, PAYSLIP_CELL.EVENT.row, PAYSLIP_CELL.EVENT.col, payslip.경조사비);
+  setPayItemCell(
+    sheet,
+    PAYSLIP_CELL.BASE.row,
+    PAYSLIP_CELL.BASE.hours,
+    PAYSLIP_CELL.BASE.amount,
+    payslip.기본급시간,
+    payslip.기본급,
+  );
+  setPayItemCell(
+    sheet,
+    PAYSLIP_CELL.OT.row,
+    PAYSLIP_CELL.OT.hours,
+    PAYSLIP_CELL.OT.amount,
+    payslip.연장시간,
+    payslip.연장,
+  );
+  setPayItemCell(
+    sheet,
+    PAYSLIP_CELL.NIGHT.row,
+    PAYSLIP_CELL.NIGHT.hours,
+    PAYSLIP_CELL.NIGHT.amount,
+    payslip.심야수당시간,
+    payslip.심야수당,
+  );
+  setPayItemCell(
+    sheet,
+    PAYSLIP_CELL.HOL.row,
+    PAYSLIP_CELL.HOL.hours,
+    PAYSLIP_CELL.HOL.amount,
+    payslip.주특시간,
+    payslip.주특,
+  );
+  setPayItemCell(
+    sheet,
+    PAYSLIP_CELL.HOT.row,
+    PAYSLIP_CELL.HOT.hours,
+    PAYSLIP_CELL.HOT.amount,
+    payslip.특잔시간,
+    payslip.특잔,
+  );
+  setPayItemCell(
+    sheet,
+    PAYSLIP_CELL.EVENT.row,
+    PAYSLIP_CELL.EVENT.hours,
+    PAYSLIP_CELL.EVENT.amount,
+    0,
+    payslip.경조사비,
+  );
+  setPayItemCell(
+    sheet,
+    PAYSLIP_CELL.FULL_ATTEND.row,
+    PAYSLIP_CELL.FULL_ATTEND.hours,
+    PAYSLIP_CELL.FULL_ATTEND.amount,
+    0,
+    payslip.만근수당,
+  );
 
   for (const row of PAYSLIP_CELL.BLANK_DEDUCT_ROWS) {
     sheet.getCell(row, 6).value = null;
@@ -91,7 +154,8 @@ function fillPayslipSheet(sheet: ExcelJS.Worksheet, payslip: PayslipData): void 
     PAYSLIP_CELL.DEDUCT_TOTAL.col,
     payslip.공제총액,
   );
-  setAmountCell(sheet, PAYSLIP_CELL.GROSS.row, PAYSLIP_CELL.GROSS.col, payslip.급여총액);
+  setAmountCell(sheet, PAYSLIP_CELL.GROSS.row, PAYSLIP_CELL.GROSS.amount, payslip.급여총액);
+  sheet.getCell(PAYSLIP_CELL.GROSS.row, PAYSLIP_CELL.GROSS.hours).value = null;
   setAmountCell(sheet, PAYSLIP_CELL.NET.row, PAYSLIP_CELL.NET.col, payslip.실수령액);
 }
 
@@ -131,16 +195,20 @@ async function createPayslipExcel(payslip: PayslipData): Promise<Blob> {
 
 function buildPayslipHtml(payslip: PayslipData): string {
   const fmt = (n: number) => formatNumber(n);
+  const fmtHours = (n: number) => n.toFixed(1);
+  const fmtAmount = (n: number) => (n > 0 ? fmt(n) : '');
   const title = `${payslip.year}년 ${payslip.month}월 급여명세서`;
 
   const payRow = (
     payLabel: string,
+    hours: number,
     payAmount: number,
     deductLabel: string,
     deductAmount?: number,
   ) => `<tr>
     <td class="label">${payLabel}</td>
-    <td class="amount">${fmt(payAmount)}</td>
+    <td class="hours">${fmtHours(hours)}</td>
+    <td class="amount">${fmtAmount(payAmount)}</td>
     <td class="label deduct">${deductLabel}</td>
     <td class="amount">${deductAmount === undefined ? '' : fmt(deductAmount)}</td>
   </tr>`;
@@ -152,25 +220,28 @@ function buildPayslipHtml(payslip: PayslipData): string {
       <table>
         <thead>
           <tr>
-            <th colspan="2">급&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;여</th>
+            <th colspan="3">급&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;여</th>
             <th colspan="2">세&nbsp;&nbsp;&nbsp;액&nbsp;&nbsp;&nbsp;&nbsp;및&nbsp;&nbsp;&nbsp;&nbsp;공&nbsp;&nbsp;&nbsp;제</th>
           </tr>
         </thead>
         <tbody>
-          ${payRow('기&nbsp;&nbsp;본&nbsp;&nbsp;급', payslip.기본급, '국&nbsp;&nbsp;민&nbsp;&nbsp;연&nbsp;&nbsp;금')}
-          ${payRow('연장', payslip.연장, '건&nbsp;&nbsp;강&nbsp;&nbsp;보&nbsp;&nbsp;험')}
-          ${payRow('심야수당', payslip.심야수당, '장 기 요 양 보 험')}
-          ${payRow('주특', payslip.주특, '고용보험')}
-          ${payRow('특잔', payslip.특잔, '근로소득세 (3%)', payslip.근로소득세)}
-          ${payRow('경조사비', payslip.경조사비, '지방소득세 (0.3%)', payslip.지방소득세)}
+          ${payRow('기&nbsp;&nbsp;본&nbsp;&nbsp;급', payslip.기본급시간, payslip.기본급, '국&nbsp;&nbsp;민&nbsp;&nbsp;연&nbsp;&nbsp;금')}
+          ${payRow('연장', payslip.연장시간, payslip.연장, '건&nbsp;&nbsp;강&nbsp;&nbsp;보&nbsp;&nbsp;험')}
+          ${payRow('심야수당', payslip.심야수당시간, payslip.심야수당, '장 기 요 양 보 험')}
+          ${payRow('주특', payslip.주특시간, payslip.주특, '고용보험')}
+          ${payRow('특잔', payslip.특잔시간, payslip.특잔, '근로소득세 (3%)', payslip.근로소득세)}
+          ${payRow('경조사비', 0, payslip.경조사비, '지방소득세 (0.3%)', payslip.지방소득세)}
+          ${payRow('만근수당', 0, payslip.만근수당, '', undefined)}
           <tr class="summary">
             <td class="label"></td>
+            <td class="hours"></td>
             <td class="amount"></td>
             <td class="label deduct">공&nbsp;&nbsp;제&nbsp;&nbsp;총&nbsp;&nbsp;액</td>
             <td class="amount">${fmt(payslip.공제총액)}</td>
           </tr>
           <tr class="summary">
             <td class="label">급&nbsp;&nbsp;여&nbsp;&nbsp;총&nbsp;&nbsp;액</td>
+            <td class="hours"></td>
             <td class="amount">${fmt(payslip.급여총액)}</td>
             <td class="label deduct">실&nbsp;&nbsp;수&nbsp;&nbsp;령&nbsp;&nbsp;액</td>
             <td class="amount">${fmt(payslip.실수령액)}</td>
@@ -189,9 +260,10 @@ const PAYSLIP_CSS = `
   table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid #000; }
   th { text-align: center; font-weight: normal; padding: 8px 4px; border: 1px solid #000; background: #d9d9d9; }
   td { padding: 7px 6px; vertical-align: middle; border: 1px solid #000; }
-  .label { width: 24%; text-align: center; white-space: nowrap; }
-  .label.deduct { width: 26%; }
-  .amount { width: 24%; text-align: right; padding-right: 10px; }
+  .label { width: 18%; text-align: center; white-space: nowrap; }
+  .label.deduct { width: 22%; }
+  .hours { width: 12%; text-align: center; }
+  .amount { width: 18%; text-align: right; padding-right: 10px; }
   tr.summary td { background: #d9d9d9; font-weight: bold; }
   .footer { text-align: center; margin-top: 18px; padding: 10px 8px; background: #b4c7e7; border: 1px solid #000; font-size: 14px; }
 `;

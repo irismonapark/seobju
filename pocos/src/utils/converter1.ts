@@ -52,6 +52,7 @@ const INVOICE_COL = {
   HOL_A: 16,
   HOT_H: 17,
   HOT_A: 18,
+  FULL_ATTEND: 19,
   DIRECT: 21,
   PENSION: 22,
   HEALTH: 23,
@@ -75,6 +76,7 @@ const SUM_COLUMNS = [
   INVOICE_COL.HOL_A,
   INVOICE_COL.HOT_H,
   INVOICE_COL.HOT_A,
+  INVOICE_COL.FULL_ATTEND,
   INVOICE_COL.DIRECT,
   INVOICE_COL.PENSION,
   INVOICE_COL.HEALTH,
@@ -83,6 +85,7 @@ const SUM_COLUMNS = [
   INVOICE_COL.INDUST,
   INVOICE_COL.MGMT,
   INVOICE_COL.INDIRECT,
+  INVOICE_COL.EVENT,
   INVOICE_COL.TOTAL,
 ] as const;
 
@@ -101,7 +104,7 @@ const DATA_STYLE_COLUMNS = [
   INVOICE_COL.HOL_A,
   INVOICE_COL.HOT_H,
   INVOICE_COL.HOT_A,
-  19,
+  INVOICE_COL.FULL_ATTEND,
   20,
   INVOICE_COL.DIRECT,
   INVOICE_COL.PENSION,
@@ -131,7 +134,7 @@ const COLUMN_WIDTHS: Partial<Record<number, number>> = {
   [INVOICE_COL.HOL_A]: 14,
   [INVOICE_COL.HOT_H]: 10,
   [INVOICE_COL.HOT_A]: 14,
-  19: 10,
+  [INVOICE_COL.FULL_ATTEND]: 12,
   20: 10,
   [INVOICE_COL.DIRECT]: 14,
   [INVOICE_COL.PENSION]: 13,
@@ -167,6 +170,25 @@ const AMOUNT_NUM_FMT = '#,##0';
 const DATA_FONT: Partial<ExcelJS.Font> = { name: '맑은 고딕', size: 11 };
 const TOTAL_AMOUNT_FONT: Partial<ExcelJS.Font> = { name: '맑은 고딕', size: 9, bold: true };
 const LAST_DATA_COL = INVOICE_COL.TOTAL;
+
+function excelColumnLetter(col: number): string {
+  let n = col;
+  let result = '';
+  while (n > 0) {
+    n -= 1;
+    result = String.fromCharCode(65 + (n % 26)) + result;
+    n = Math.floor(n / 26);
+  }
+  return result;
+}
+
+function buildRowTotalFormula(rowNum: number): string {
+  const direct = excelColumnLetter(INVOICE_COL.DIRECT);
+  const indirect = excelColumnLetter(INVOICE_COL.INDIRECT);
+  const fullAttend = excelColumnLetter(INVOICE_COL.FULL_ATTEND);
+  const event = excelColumnLetter(INVOICE_COL.EVENT);
+  return `ROUNDDOWN(${direct}${rowNum}+${indirect}${rowNum}+${fullAttend}${rowNum}+${event}${rowNum},-1)`;
+}
 
 function isSummaryRow(noText: string, name: string): boolean {
   const normalized = (noText + name).replace(/\s/g, '');
@@ -330,6 +352,7 @@ function fillInvoiceRow(row: ExcelJS.Row, invoice: InvoiceRow, dept: string): vo
   setCellValue(row, INVOICE_COL.HOT_H, invoice.특잔.hours);
   setCellValue(row, INVOICE_COL.HOT_A, invoice.특잔.amount);
 
+  row.getCell(INVOICE_COL.FULL_ATTEND).value = null;
   setCellValue(row, INVOICE_COL.DIRECT, invoice.직접비소계);
   setCellValue(row, INVOICE_COL.PENSION, invoice.국민연금);
   setCellValue(row, INVOICE_COL.HEALTH, invoice.건강보험);
@@ -339,7 +362,9 @@ function fillInvoiceRow(row: ExcelJS.Row, invoice: InvoiceRow, dept: string): vo
   setCellValue(row, INVOICE_COL.MGMT, invoice.관리비);
   setCellValue(row, INVOICE_COL.INDIRECT, invoice.간접비소계);
   row.getCell(INVOICE_COL.EVENT).value = null;
-  setCellValue(row, INVOICE_COL.TOTAL, roundOnesDigit(invoice.급여총액));
+  row.getCell(INVOICE_COL.TOTAL).value = {
+    formula: buildRowTotalFormula(row.number),
+  };
 }
 
 async function loadTemplateWorkbook(): Promise<ExcelJS.Workbook> {
@@ -360,10 +385,9 @@ function stripSheetFormulas(sheet: ExcelJS.Worksheet): void {
       const val = cell.value;
       if (val === null || val === undefined || typeof val !== 'object') return;
 
-      if ('sharedFormula' in val || 'formula' in val) {
+      if ('sharedFormula' in val) {
         const formulaVal = val as { result?: ExcelJS.CellValue };
         cell.value = formulaVal.result ?? null;
-        return;
       }
 
       if ('richText' in val && Array.isArray((val as ExcelJS.CellRichTextValue).richText)) {
@@ -374,6 +398,11 @@ function stripSheetFormulas(sheet: ExcelJS.Worksheet): void {
 }
 
 type RowStyleSnapshot = Map<number, Partial<ExcelJS.Style>>;
+
+function updateInvoiceHeaders(sheet: ExcelJS.Worksheet): void {
+  sheet.getCell(3, INVOICE_COL.FULL_ATTEND).value = '만근수당';
+  sheet.getCell(4, INVOICE_COL.FULL_ATTEND).value = '만근수당';
+}
 
 function updateSheetTitle(sheet: ExcelJS.Worksheet, year: number, month: string): void {
   sheet.eachRow((row) => {
@@ -524,6 +553,8 @@ function getInvoiceColumnValue(invoice: InvoiceRow, col: number): number {
       return invoice.특잔.hours;
     case INVOICE_COL.HOT_A:
       return invoice.특잔.amount;
+    case INVOICE_COL.FULL_ATTEND:
+      return invoice.만근수당;
     case INVOICE_COL.DIRECT:
       return invoice.직접비소계;
     case INVOICE_COL.PENSION:
@@ -540,6 +571,8 @@ function getInvoiceColumnValue(invoice: InvoiceRow, col: number): number {
       return invoice.관리비;
     case INVOICE_COL.INDIRECT:
       return invoice.간접비소계;
+    case INVOICE_COL.EVENT:
+      return invoice.경조사비;
     case INVOICE_COL.TOTAL:
       return roundOnesDigit(invoice.급여총액);
     default:
@@ -569,10 +602,21 @@ function fillTotalRow(
 
   for (const col of SUM_COLUMNS) {
     const cell = row.getCell(col);
-    cell.value = invoices.reduce((acc, invoice) => acc + getInvoiceColumnValue(invoice, col), 0);
+    if (col === INVOICE_COL.TOTAL) {
+      const firstRow = DATA_START_ROW;
+      const lastRow = DATA_START_ROW + invoices.length - 1;
+      const totalCol = excelColumnLetter(INVOICE_COL.TOTAL);
+      cell.value = { formula: `SUM(${totalCol}${firstRow}:${totalCol}${lastRow})` };
+    } else if (col === INVOICE_COL.FULL_ATTEND || col === INVOICE_COL.EVENT) {
+      const colLetter = excelColumnLetter(col);
+      const firstRow = DATA_START_ROW;
+      const lastRow = DATA_START_ROW + invoices.length - 1;
+      cell.value = { formula: `SUM(${colLetter}${firstRow}:${colLetter}${lastRow})` };
+    } else {
+      cell.value = invoices.reduce((acc, invoice) => acc + getInvoiceColumnValue(invoice, col), 0);
+    }
     cell.numFmt = AMOUNT_NUM_FMT;
   }
-  row.getCell(INVOICE_COL.EVENT).value = null;
   row.commit();
 }
 
@@ -700,6 +744,7 @@ async function writeInvoiceWorkbook(
 
   stripSheetFormulas(sheet);
   updateSheetTitle(sheet, year, month);
+  updateInvoiceHeaders(sheet);
   applySheetColumnWidths(sheet);
 
   const totalRowStyles = captureRowStyles(sheet, TEMPLATE_TOTAL_ROW);
@@ -715,8 +760,6 @@ async function writeInvoiceWorkbook(
   });
 
   trimAndAppendSummary(sheet, invoices, totalRowStyles, summaryRowStyles);
-
-  stripSheetFormulas(sheet);
 
   const lastContentRow = DATA_START_ROW + invoices.length + 4;
   finalizeSheetLayout(sheet, lastContentRow);
